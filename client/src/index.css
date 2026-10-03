@@ -30,6 +30,12 @@
   --animate-fade-in: fade-in 180ms ease-out both;
   --animate-pop: pop 260ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
   --animate-ring: ring 1.6s ease-out infinite;
+  --animate-shake: shake 0.4s ease-in-out;
+
+  @keyframes shake {
+    20%, 60% { transform: translateX(-8px); }
+    40%, 80% { transform: translateX(8px); }
+  }
 
   @keyframes message-in {
     from { opacity: 0; transform: translateY(6px) scale(0.98); }

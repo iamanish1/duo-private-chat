@@ -5,6 +5,7 @@ import { discardTempFiles, storeAvatar } from '../services/mediaService.js';
 import { publicUser, selfUser } from '../services/serializers.js';
 import { removeMedia } from '../services/storage/index.js';
 import { emitToConversation } from '../sockets/realtime.js';
+import * as authService from '../services/authService.js';
 
 function broadcastProfile(req, user) {
   emitToConversation(req.session.conversation._id, 'user:updated', publicUser(user));
@@ -43,5 +44,15 @@ export async function removeAvatar(req, res) {
   const user = await User.findByIdAndUpdate(req.session.user._id, { $unset: { avatar: 1 } }, { returnDocument: 'after' });
   if (previous) removeMedia(previous);
   broadcastProfile(req, user);
+  res.json({ user: selfUser(user) });
+}
+
+export async function setPin(req, res) {
+  const user = await authService.setPin(req.session.user._id, req.valid.body.password, req.valid.body.pin);
+  res.json({ user: selfUser(user) });
+}
+
+export async function removePin(req, res) {
+  const user = await authService.removePin(req.session.user._id, req.valid.body.password);
   res.json({ user: selfUser(user) });
 }

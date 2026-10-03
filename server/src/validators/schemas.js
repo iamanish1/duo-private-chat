@@ -77,6 +77,12 @@ export const pushSubscribeBody = z.object({
 
 export const pushUnsubscribeBody = z.object({ endpoint: z.string().max(1000) });
 
+const pin = z.string().regex(/^\d{4}$/, 'The Duo code must be 4 digits');
+const currentPassword = z.string().min(1, 'Enter your password').max(200);
+export const unlockBody = z.object({ pin });
+export const setPinBody = z.object({ password: currentPassword, pin });
+export const removePinBody = z.object({ password: currentPassword });
+
 export const updateProfileBody = z.object({
   name: z.string().trim().min(1).max(60).optional(),
   settings: z

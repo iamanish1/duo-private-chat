@@ -10,6 +10,7 @@ import { Spinner } from './components/common/Spinner';
 import { Toaster } from './components/common/Toaster';
 import { useVisualViewport } from './hooks/useVisualViewport';
 import Login from './pages/Login';
+import Unlock from './pages/Unlock';
 import Chat from './pages/Chat';
 
 // Secondary screens are code-split to keep the first load small on mobile.
@@ -45,6 +46,7 @@ function RequireAuth() {
 function AppRoutes() {
   const { status, retry } = useAuth();
   if (status === 'loading') return <Splash />;
+  if (status === 'locked') return <Unlock />;
   if (status === 'unreachable') {
     return (
       <StateScreen

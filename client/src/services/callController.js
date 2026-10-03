@@ -131,12 +131,21 @@ export function answerWhenRinging(callId) {
 }
 
 /** App opened from a call notification's "Answer" button (?call=…&answer=1). */
+let callLaunch = null; // { callId, answer, at } when opened from a call notification
+
 export function captureCallNotificationLaunch() {
   const params = new URLSearchParams(window.location.search);
   const callId = params.get('call');
   if (!callId) return;
-  if (params.get('answer') === '1') answerWhenRinging(callId);
+  const answer = params.get('answer') === '1';
+  callLaunch = { callId, answer, at: Date.now() };
+  if (answer) answerWhenRinging(callId);
   window.history.replaceState(null, '', window.location.pathname);
+}
+
+/** Recent call-notification launch, so the lock screen can say who is calling. */
+export function getCallLaunch() {
+  return callLaunch && Date.now() - callLaunch.at < PENDING_ANSWER_MS ? callLaunch : null;
 }
 
 // ---- Public actions -------------------------------------------------------------

@@ -22,6 +22,7 @@ export function selfUser(user) {
   return {
     ...publicUser(user),
     email: user.email,
+    hasPin: Boolean(user.hasPin),
     settings: {
       notificationPreview: user.settings?.notificationPreview ?? 'sender',
       allowVoiceCalls: user.settings?.allowVoiceCalls !== false,

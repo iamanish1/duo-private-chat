@@ -68,3 +68,13 @@ export const uploadLimiter = rateLimit({
   legacyHeaders: false,
   handler: limitHandler('Too many uploads at once. Please wait a moment.'),
 });
+
+// Duo-code unlock and changes: separate budget from password sign-ins. The
+// per-account 5-wrong-codes lockout is the main defence; this caps volume.
+export const pinLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 30,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  handler: limitHandler('Too many attempts. Please wait a few minutes.'),
+});

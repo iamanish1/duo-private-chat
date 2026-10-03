@@ -54,6 +54,10 @@ export const authApi = {
   logout: () => data(api.post('/auth/logout', null, { skipSessionCheck: true })),
   logoutEverywhere: () => data(api.post('/auth/logout-all')),
   me: () => data(api.get('/auth/me', { skipSessionCheck: true })),
+  // Duo code: lock on reopen, check whether this device can be unlocked, unlock.
+  lock: () => data(api.post('/auth/lock', null, { skipSessionCheck: true })),
+  lockStatus: () => data(api.get('/auth/lock-status', { skipSessionCheck: true })),
+  unlock: (pin) => data(api.post('/auth/unlock', { pin }, { skipSessionCheck: true })),
 };
 
 export const chatApi = {
@@ -79,6 +83,8 @@ export const userApi = {
   update: (body) => data(api.patch('/users/me', body)),
   uploadAvatar: (formData) => data(api.post('/users/me/avatar', formData, { timeout: 0 })),
   removeAvatar: () => data(api.delete('/users/me/avatar')),
+  setPin: (password, pin) => data(api.put('/users/me/pin', { password, pin })),
+  removePin: (password) => data(api.delete('/users/me/pin', { data: { password } })),
 };
 
 export const notificationApi = {

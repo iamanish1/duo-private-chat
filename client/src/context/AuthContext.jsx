@@ -29,37 +29,58 @@ const openSession = {
   },
 };
 
-// status: loading | authenticated | anonymous | unreachable
 export function AuthProvider({ children }) {
-  const [state, setState] = useState({ status: 'loading', user: null, notice: null });
+  // status: loading | locked | authenticated | anonymous | unreachable
+  const [state, setState] = useState({ status: 'loading', user: null, notice: null, lock: null });
+
+  /** Trusted device with a Duo code → lock screen; otherwise the password screen. */
+  const showLockOrLogin = useCallback(async (notice = null) => {
+    try {
+      const lock = await authApi.lockStatus();
+      if (lock.locked && lock.hasPin && !lock.pinLocked) {
+        setState({ status: 'locked', user: null, notice, lock });
+        return;
+      }
+      const lockedOut = lock.locked && lock.pinLocked ? 'Too many wrong codes. Sign in with your password.' : null;
+      setState({ status: 'anonymous', user: null, notice: lockedOut ?? notice, lock: null });
+    } catch (err) {
+      setState({ status: err.status ? 'anonymous' : 'unreachable', user: null, notice, lock: null });
+    }
+  }, []);
 
   const checkSession = useCallback(async () => {
     setState((s) => ({ ...s, status: 'loading' }));
     if (!openSession.has()) {
-      // Reopened after being closed: drop any leftover cookie and ask to sign in.
-      await authApi.logout().catch(() => {});
-      setState({ status: 'anonymous', user: null, notice: null });
+      // Reopened after being closed: end the session (the device stays trusted)
+      // and ask for the Duo code, or the password if there is none.
+      await authApi.lock().catch(() => {});
+      await showLockOrLogin();
       return;
     }
     try {
       const { user } = await authApi.me();
-      setState({ status: 'authenticated', user, notice: null });
+      setState({ status: 'authenticated', user, notice: null, lock: null });
     } catch (err) {
-      setState({ status: err.status ? 'anonymous' : 'unreachable', user: null, notice: null });
+      if (err.status) await showLockOrLogin();
+      else setState({ status: 'unreachable', user: null, notice: null, lock: null });
     }
-  }, []);
+  }, [showLockOrLogin]);
 
   useEffect(() => {
     checkSession();
   }, [checkSession]);
 
-  const endSession = useCallback((notice = null) => {
-    openSession.set(false);
-    disconnectSocket();
-    useChatStore.getState().reset();
-    useCallStore.getState().reset();
-    setState({ status: 'anonymous', user: null, notice });
-  }, []);
+  const endSession = useCallback(
+    (notice = null) => {
+      openSession.set(false);
+      disconnectSocket();
+      useChatStore.getState().reset();
+      useCallStore.getState().reset();
+      setState({ status: 'loading', user: null, notice: null, lock: null });
+      showLockOrLogin(notice);
+    },
+    [showLockOrLogin],
+  );
 
   // Any 401 from the API (expired/revoked token) lands the user on login.
   useEffect(
@@ -76,8 +97,16 @@ export function AuthProvider({ children }) {
       async login(email, password) {
         const { user } = await authApi.login(email, password);
         openSession.set(true);
-        setState({ status: 'authenticated', user, notice: null });
+        setState({ status: 'authenticated', user, notice: null, lock: null });
       },
+      /** Unlock this trusted device with the 4-digit Duo code. */
+      async unlock(pin) {
+        const { user } = await authApi.unlock(pin);
+        openSession.set(true);
+        setState({ status: 'authenticated', user, notice: null, lock: null });
+      },
+      /** From the lock screen: forgot the code → full password sign-in. */
+      usePassword: () => setState((s) => ({ ...s, status: 'anonymous', notice: null, lock: null })),
       async logout({ everywhere = false } = {}) {
         // Don't keep pushing to a device someone signed out of.
         await disableNotifications({ optOut: false }).catch(() => {});

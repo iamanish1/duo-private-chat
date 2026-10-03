@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
-import { loginLimiter, uploadLimiter } from '../middleware/security.js';
+import { loginLimiter, pinLimiter, uploadLimiter } from '../middleware/security.js';
 import { avatarUpload, messageUpload } from '../middleware/upload.js';
 import * as schemas from '../validators/schemas.js';
 import * as auth from '../controllers/authController.js';
@@ -19,6 +19,9 @@ router.get('/health', (req, res) => res.json({ ok: true }));
 // ---- Auth (no signup route exists, by design) ----------------------------
 router.post('/auth/login', loginLimiter, validate({ body: schemas.loginBody }), auth.login);
 router.post('/auth/logout', auth.logout);
+router.post('/auth/lock', auth.lock);
+router.get('/auth/lock-status', auth.lockStatus);
+router.post('/auth/unlock', pinLimiter, validate({ body: schemas.unlockBody }), auth.unlock);
 router.get('/auth/me', requireAuth, auth.me);
 router.post('/auth/logout-all', requireAuth, auth.logoutEverywhere);
 
@@ -40,6 +43,8 @@ router.get('/media/file/:key', media.serveLocalFile);
 
 router.patch('/users/me', validate({ body: schemas.updateProfileBody }), users.updateProfile);
 router.post('/users/me/avatar', uploadLimiter, avatarUpload, users.uploadAvatar);
+router.put('/users/me/pin', pinLimiter, validate({ body: schemas.setPinBody }), users.setPin);
+router.delete('/users/me/pin', pinLimiter, validate({ body: schemas.removePinBody }), users.removePin);
 router.delete('/users/me/avatar', users.removeAvatar);
 
 router.get('/notifications/public-key', notifications.getPublicKey);

@@ -15,6 +15,10 @@ const userSchema = new mongoose.Schema(
     tokenVersion: { type: Number, default: 0, select: false },
     failedLoginAttempts: { type: Number, default: 0, select: false },
     lockUntil: { type: Date, default: null, select: false },
+    // 4-digit Duo code for unlocking a trusted device after the app was closed.
+    pinHash: { type: String, default: null, select: false },
+    pinFailedAttempts: { type: Number, default: 0, select: false },
+    hasPin: { type: Boolean, default: false },
     settings: {
       // What push notifications reveal: full text, only the sender, or nothing.
       notificationPreview: { type: String, enum: ['full', 'sender', 'hidden'], default: 'sender' },

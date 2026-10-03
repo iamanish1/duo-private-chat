@@ -11,6 +11,7 @@ import { isIOS, isStandalone } from '../services/push';
 import { useChatStore } from '../store/chatStore';
 import { toast } from '../store/toastStore';
 import { ProfilePhoto } from '../components/settings/ProfilePhoto';
+import { DuoCodeSetting } from '../components/settings/DuoCodeSetting';
 import { APP_NAME } from '../config';
 
 function Section({ title, children }) {
@@ -265,6 +266,7 @@ export default function Settings() {
       </Section>
 
       <Section title="Privacy & account">
+        <DuoCodeSetting user={user} onUpdated={applyUser} />
         <Row icon={ShieldCheck} title="Private by design" description={`Only you and ${peer?.name ?? 'your person'} can access this space.`} />
         <Row icon={LogOut} title="Sign out" onClick={() => logout()} />
         <Row icon={LogOut} title="Sign out of all devices" tone="danger" onClick={() => setConfirmEverywhere(true)} />

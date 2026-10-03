@@ -11,6 +11,7 @@ import { MessageActionsSheet } from '../components/chat/MessageActionsSheet';
 import { Composer } from '../components/chat/Composer';
 import { MediaViewer } from '../components/media/MediaViewer';
 import { NotificationPrompt } from '../components/notifications/NotificationPrompt';
+import { DuoCodeReminder } from '../components/settings/DuoCodeReminder';
 import { StateScreen } from '../components/common/StateScreen';
 import { useChatStore } from '../store/chatStore';
 import { isInCall, useCallStore } from '../store/callStore';
@@ -66,6 +67,7 @@ export default function Chat() {
       <section className="flex min-w-0 flex-1 flex-col">
         <ChatHeader onCall={onCall} onMenu={() => setMenuOpen(true)} onProfile={() => setMenuOpen(true)} callDisabled={callDisabled} />
         <ConnectionBanner />
+        {status === 'ready' && <DuoCodeReminder />}
         {status === 'ready' && <NotificationPrompt peerName={peer?.name} visible={promptVisible} />}
 
         {status === 'error' ? (

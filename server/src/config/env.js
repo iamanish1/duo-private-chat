@@ -32,6 +32,8 @@ const schema = z.object({
   MONGODB_URI: optionalString,
   JWT_SECRET: optionalString,
   JWT_EXPIRES_IN: z.preprocess(emptyToUndefined, z.string().default('7d')),
+  // How long a device stays trusted for unlocking with the Duo code.
+  DEVICE_TOKEN_EXPIRES_IN: z.preprocess(emptyToUndefined, z.string().default('30d')),
   CLIENT_URL: optionalString,
   COOKIE_SAME_SITE: z.preprocess(emptyToUndefined, z.enum(['lax', 'strict', 'none']).optional()),
   TRUST_PROXY: intWithDefault(0),
@@ -105,7 +107,7 @@ function buildConfig() {
     isTest: env.NODE_ENV === 'test',
     port: env.PORT,
     mongoUri: env.MONGODB_URI,
-    jwt: { secret: env.JWT_SECRET, expiresIn: env.JWT_EXPIRES_IN },
+    jwt: { secret: env.JWT_SECRET, expiresIn: env.JWT_EXPIRES_IN, deviceExpiresIn: env.DEVICE_TOKEN_EXPIRES_IN },
     clientOrigins,
     // Cross-site deployments need SameSite=None (HTTPS only); same-origin uses Lax.
     cookieSameSite: env.COOKIE_SAME_SITE || (isProd && clientOrigins.length > 0 && !serveClient ? 'none' : 'lax'),
