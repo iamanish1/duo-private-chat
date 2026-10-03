@@ -3,6 +3,7 @@ import { MicOff, VideoOff } from 'lucide-react';
 import { Avatar } from '../common/Avatar';
 import { Spinner } from '../common/Spinner';
 import { VideoTile } from './VideoTile';
+import { RemoteVideo } from './RemoteVideo';
 import { DraggablePip } from './DraggablePip';
 import { CallControls } from './CallControls';
 import { formatDuration } from '../../utils/format';
@@ -45,7 +46,7 @@ export function CallScreen({ call }) {
   return (
     <div className="fixed inset-0 z-[80] animate-fade-in overflow-hidden bg-[#0d0a09] text-white" onClick={() => setChromeVisible(true)} role="dialog" aria-label={`Video call with ${peer?.name}`}>
       {showRemote ? (
-        <VideoTile stream={remoteStream} className="absolute inset-0 size-full object-cover" />
+        <RemoteVideo stream={remoteStream} />
       ) : phase !== 'ended' && localStream ? (
         // While ringing, show yourself full screen like a mirror.
         <VideoTile stream={localStream} muted mirrored={facingMode === 'user'} className="absolute inset-0 size-full object-cover opacity-60 blur-[1px]" />

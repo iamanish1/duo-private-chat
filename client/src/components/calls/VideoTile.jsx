@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 /** Binds a MediaStream to a <video>; iOS needs playsInline + muted for autoplay. */
-export function VideoTile({ stream, muted = false, mirrored = false, className = '' }) {
+export function VideoTile({ stream, muted = false, mirrored = false, className = '', ...rest }) {
   const ref = useRef(null);
 
   useEffect(() => {
@@ -18,6 +18,7 @@ export function VideoTile({ stream, muted = false, mirrored = false, className =
       playsInline
       muted={muted}
       className={`${className} ${mirrored ? '-scale-x-100' : ''}`}
+      {...rest}
     />
   );
 }

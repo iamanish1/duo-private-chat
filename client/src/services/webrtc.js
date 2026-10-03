@@ -26,12 +26,14 @@ export function describeMediaError(error) {
   }
 }
 
-const videoConstraints = (facingMode) => ({
-  facingMode,
-  width: { ideal: 1280 },
-  height: { ideal: 720 },
-  frameRate: { ideal: 30, max: 30 },
-});
+const isPhone = () => window.matchMedia('(pointer: coarse)').matches && Math.min(window.screen.width, window.screen.height) < 600;
+
+// Phones: don't force a 16:9 landscape frame — some (notably iOS) crop or
+// squeeze a portrait camera into it. Let them send their natural orientation.
+const videoConstraints = (facingMode) =>
+  isPhone()
+    ? { facingMode, frameRate: { ideal: 30, max: 30 } }
+    : { facingMode, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30, max: 30 } };
 
 export async function getLocalMedia(facingMode = 'user') {
   return navigator.mediaDevices.getUserMedia({
