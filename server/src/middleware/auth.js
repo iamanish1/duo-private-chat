@@ -1,5 +1,5 @@
 import { config } from '../config/env.js';
-import { resolveSession, tokenMaxAgeMs } from '../services/authService.js';
+import { resolveSession } from '../services/authService.js';
 
 export const SESSION_COOKIE = 'duo_session';
 
@@ -13,8 +13,13 @@ function cookieOptions() {
   };
 }
 
+/**
+ * Browser-session cookie (no Max-Age/Expires): it disappears when the browser
+ * closes, so reopening the app requires signing in again. The JWT inside still
+ * expires after JWT_EXPIRES_IN as an upper bound.
+ */
 export function setSessionCookie(res, token) {
-  res.cookie(SESSION_COOKIE, token, { ...cookieOptions(), maxAge: tokenMaxAgeMs(token) });
+  res.cookie(SESSION_COOKIE, token, cookieOptions());
 }
 
 export function clearSessionCookie(res) {

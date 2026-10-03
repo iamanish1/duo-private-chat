@@ -22,6 +22,8 @@ describe('authentication', () => {
     expect(cookie).toMatch(/^duo_session=/);
     expect(cookie).toMatch(/HttpOnly/i);
     expect(cookie).toMatch(/SameSite=Lax/i);
+    // Browser-session cookie: gone when the browser closes.
+    expect(cookie).not.toMatch(/Max-Age|Expires/i);
   });
 
   it('accepts emails case-insensitively', async () => {

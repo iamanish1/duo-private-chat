@@ -59,12 +59,6 @@ export function signToken(user) {
   });
 }
 
-/** Seconds until the token expires, used to align the cookie lifetime. */
-export function tokenMaxAgeMs(token) {
-  const { exp } = jwt.decode(token);
-  return Math.max(0, exp * 1000 - Date.now());
-}
-
 /**
  * Turns a raw token into the request's private-room context. Every check is
  * server-side: valid signature, unrevoked, allow-listed, and a participant
