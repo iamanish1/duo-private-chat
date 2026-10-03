@@ -5,7 +5,7 @@ import { sameId, toObjectId } from '../utils/ids.js';
 import { logger } from '../utils/logger.js';
 import { emitToConversation, emitToSocket, emitToUser, onScreenPushEndpoints } from '../sockets/realtime.js';
 import { publicUser, serializeCall } from './serializers.js';
-import { buildCallNotification, sendToUser } from './pushService.js';
+import { buildCallNotification, buildMissedCallNotification, sendToUser } from './pushService.js';
 
 // Per-process call coordination. Signaling is routed socket-to-socket so a
 // second open tab can never hijack an ongoing call. (Single instance: move
@@ -51,11 +51,21 @@ async function finish(callId, { status, reason }) {
   callSockets.delete(callId);
   emitToConversation(call.conversationId, 'call:ended', { call: serializeCall(call), reason });
 
-  if (finalStatus === 'missed' && reason === 'no-answer') {
-    sendToUser(call.receiverId, { type: 'missed-call', tag: `duo-call-${callId}`, url: '/', title: call.type === 'audio' ? 'Missed voice call' : 'Missed video call', body: 'Tap to call back' })
-      .catch(() => logger.warn('Missed-call push failed'));
+  // Unanswered (timed out or the caller hung up): swap the ringing
+  // notification for a missed-call one so it never goes unnoticed.
+  if (finalStatus === 'missed' && (reason === 'no-answer' || reason === 'cancelled')) {
+    notifyMissedCall(call).catch(() => logger.warn('Missed-call push failed'));
   }
   return call;
+}
+
+async function notifyMissedCall(call) {
+  const [caller, receiver] = await Promise.all([
+    User.findById(call.callerId).select('name').lean(),
+    User.findById(call.receiverId).select('settings').lean(),
+  ]);
+  const payload = buildMissedCallNotification({ caller, callId: callKey(call), type: call.type, preview: receiver?.settings?.notificationPreview });
+  await sendToUser(call.receiverId, payload, { urgency: 'high' });
 }
 
 export async function initiateCall(session, socketId, type = 'video') {

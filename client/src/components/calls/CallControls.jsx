@@ -1,4 +1,4 @@
-import { Mic, MicOff, PhoneOff, SwitchCamera, Video, VideoOff } from 'lucide-react';
+import { Mic, MicOff, PhoneOff, SwitchCamera, Video, VideoOff, Volume2 } from 'lucide-react';
 import { IconButton } from '../common/IconButton';
 import { endCall, switchCamera, toggleCamera, toggleMic } from '../../services/callController';
 
@@ -13,12 +13,17 @@ function Control({ label, active = false, onClick, children, disabled }) {
   );
 }
 
-export function CallControls({ micEnabled, cameraEnabled, canSwitchCamera, connected, voice = false }) {
+export function CallControls({ micEnabled, cameraEnabled, canSwitchCamera, connected, voice = false, speaker = null }) {
   return (
     <div className="flex items-start justify-center gap-5 sm:gap-7">
       <Control label={micEnabled ? 'Mute' : 'Unmute'} active={!micEnabled} onClick={toggleMic}>
         {micEnabled ? <Mic size={24} /> : <MicOff size={24} />}
       </Control>
+      {speaker && (
+        <Control label={speaker.speakerOn ? 'Speaker on' : 'Speaker'} active={speaker.speakerOn} onClick={speaker.toggle}>
+          <Volume2 size={24} />
+        </Control>
+      )}
       {!voice && (
         <Control label={cameraEnabled ? 'Camera off' : 'Camera on'} active={!cameraEnabled} onClick={toggleCamera}>
           {cameraEnabled ? <Video size={24} /> : <VideoOff size={24} />}

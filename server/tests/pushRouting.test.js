@@ -79,6 +79,25 @@ describe('push routing per device', () => {
     expect(await PushSubscription.exists({ endpoint: LAPTOP })).not.toBeNull();
   });
 
+  it('call notification has an Answer action; a cancelled call becomes a missed-call notice', async () => {
+    const payloads = [];
+    setPushSender(async (sub, body) => {
+      if (sub.endpoint === PHONE) payloads.push(JSON.parse(body));
+      return { statusCode: 201 };
+    });
+    const caller = await device(alex, { visible: true, endpoint: null });
+    const { call } = await emitAck(caller, 'call:initiate', { type: 'audio' });
+    await delay(200);
+    await emitAck(caller, 'call:end', { callId: call.id });
+    await delay(300);
+
+    const [ring, missed] = payloads;
+    const tag = `duo-call-${call.id}`;
+    expect(ring).toMatchObject({ type: 'call', tag, callId: call.id, body: 'Incoming voice call' });
+    expect(ring.actions).toEqual([{ action: 'answer', title: 'Answer' }]);
+    expect(missed).toMatchObject({ type: 'missed-call', tag, title: 'Missed voice call', body: 'From Alex · tap to call back' });
+  });
+
   it('rejects non-https endpoints on the socket', async () => {
     const socket = await connectSocket(ctx.url, sam.cookie);
     open.push(socket);

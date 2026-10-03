@@ -76,9 +76,24 @@ export function buildCallNotification({ caller, preview, callId, type = 'video' 
   return {
     type: 'call',
     tag: `duo-call-${callId}`,
-    url: '/',
+    url: `/?call=${callId}`,
+    callId: String(callId),
     title: preview === 'hidden' ? 'Incoming call' : caller.name,
     body: type === 'audio' ? 'Incoming voice call' : 'Incoming video call',
     requireInteraction: true,
+    // "Answer" opens the app and connects the call as soon as you're signed in.
+    actions: [{ action: 'answer', title: 'Answer' }],
+  };
+}
+
+/** Replaces the ringing notification (same tag) once a call ends unanswered. */
+export function buildMissedCallNotification({ caller, preview, callId, type = 'video' }) {
+  const kind = type === 'audio' ? 'voice' : 'video';
+  return {
+    type: 'missed-call',
+    tag: `duo-call-${callId}`,
+    url: '/calls',
+    title: `Missed ${kind} call`,
+    body: preview === 'hidden' ? 'Tap to see your calls' : `From ${caller.name} · tap to call back`,
   };
 }

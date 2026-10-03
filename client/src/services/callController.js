@@ -116,6 +116,29 @@ function fail(message) {
   toast.error(message);
 }
 
+// "Answer" tapped on a call notification: connect as soon as that call is
+// ringing here, even if the person had to sign in first.
+let pendingAnswer = null; // { callId, until }
+const PENDING_ANSWER_MS = 90_000;
+
+export function answerWhenRinging(callId) {
+  pendingAnswer = { callId: String(callId), until: Date.now() + PENDING_ANSWER_MS };
+  const { phase, call } = s();
+  if (phase === 'incoming' && call?.id === pendingAnswer.callId) {
+    pendingAnswer = null;
+    acceptCall();
+  }
+}
+
+/** App opened from a call notification's "Answer" button (?call=…&answer=1). */
+export function captureCallNotificationLaunch() {
+  const params = new URLSearchParams(window.location.search);
+  const callId = params.get('call');
+  if (!callId) return;
+  if (params.get('answer') === '1') answerWhenRinging(callId);
+  window.history.replaceState(null, '', window.location.pathname);
+}
+
 // ---- Public actions -------------------------------------------------------------
 export async function startCall(peer, { kind = 'video' } = {}) {
   if (isInCall(s().phase)) return;
@@ -211,6 +234,11 @@ export const callSocketHandlers = {
     clearTimeout(endedTimer);
     s().reset();
     s().patch({ phase: 'incoming', role: 'callee', call, peer: caller, kind: call.type === 'audio' ? 'audio' : 'video' });
+    if (pendingAnswer?.callId === call.id && Date.now() < pendingAnswer.until) {
+      pendingAnswer = null;
+      acceptCall();
+      return;
+    }
     startRingtone();
   },
 

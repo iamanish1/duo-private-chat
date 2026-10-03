@@ -78,7 +78,8 @@ const schema = z.object({
   LOGIN_ALERT_ONLINE_GAP_MINUTES: intWithDefault(30),
   ALERT_TIME_ZONE: z.preprocess(emptyToUndefined, z.string().default('UTC')),
 
-  CALL_RING_TIMEOUT_MS: intWithDefault(45_000),
+  // 60 s leaves time to open the app and sign in from the call notification.
+  CALL_RING_TIMEOUT_MS: intWithDefault(60_000),
   CALL_RECONNECT_GRACE_MS: intWithDefault(20_000),
 });
 

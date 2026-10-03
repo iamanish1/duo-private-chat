@@ -43,8 +43,9 @@ self.addEventListener('push', (event) => {
         icon: '/icons/icon-192.png',
         badge: '/icons/badge-96.png',
         requireInteraction: Boolean(data.requireInteraction),
-        vibrate: data.type === 'call' ? [300, 150, 300, 150, 300] : [80, 40, 80],
-        data: { url: data.url || '/' },
+        vibrate: data.type === 'call' ? [400, 200, 400, 200, 400, 200, 400] : [80, 40, 80],
+        actions: Array.isArray(data.actions) ? data.actions : [],
+        data: { url: data.url || '/', type: data.type, callId: data.callId },
       });
     })(),
   );
@@ -52,17 +53,23 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const target = new URL(event.notification.data?.url || '/', self.location.origin).href;
+  const { url = '/', type, callId } = event.notification.data || {};
+  // "Answer" connects the call as soon as the app is open and signed in;
+  // a plain tap on the notification just opens the ringing call screen.
+  const answer = type === 'call' && event.action === 'answer';
+  const target = new URL(url, self.location.origin);
+  if (answer) target.searchParams.set('answer', '1');
 
   event.waitUntil(
     (async () => {
       const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
       const existing = windows.find((client) => new URL(client.url).origin === self.location.origin);
       if (existing) {
+        if (type === 'call' && callId) existing.postMessage({ type: 'call-notification', callId, answer });
         await existing.focus();
         return;
       }
-      await self.clients.openWindow(target);
+      await self.clients.openWindow(target.href);
     })(),
   );
 });

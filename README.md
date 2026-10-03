@@ -61,6 +61,8 @@ It is built mobile-first. It installs as a PWA and is meant to feel like a nativ
 - Tuned for clarity: Opus at 64 kbps, in-band FEC to repair packet loss, no DTX, high network priority, echo cancellation and noise suppression.
 - Large-avatar call screen that glows while the other person speaks; mute and hang up; "voice" or "video" shown in history and notifications.
 - **Settings → Calls → Allow voice calls / Allow video calls**: separate switches. When one is off, that kind of call never rings; the caller is told right away ("… isn't taking video calls right now") and the attempt is logged as missed. Saved per person, enforced by the server.
+- **Answer** on the incoming-call notification: opens the app and connects the call right after signing in. Calls ring for 60 s; an unanswered call replaces its notification with "Missed voice/video call".
+- **Speaker / earpiece** button in voice calls on devices whose browser exposes both outputs (setSinkId); elsewhere the browser chooses the output.
 
 **Video calls**
 - 1:1 WebRTC, with Socket.IO for signaling and STUN/TURN supplied by the server.

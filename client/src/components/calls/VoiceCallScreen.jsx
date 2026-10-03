@@ -3,11 +3,10 @@ import { MicOff, Phone } from 'lucide-react';
 import { Avatar } from '../common/Avatar';
 import { Spinner } from '../common/Spinner';
 import { CallControls } from './CallControls';
-import { statusText, useAudioLevel, useElapsed } from './callStatus';
+import { statusText, useAudioLevel, useAudioRoute, useElapsed } from './callStatus';
 
 /** Plays the other person's voice; there is nothing to show on screen. */
-function RemoteAudio({ stream }) {
-  const ref = useRef(null);
+function RemoteAudio({ stream, audioRef: ref }) {
   useEffect(() => {
     const audio = ref.current;
     if (!audio) return;
@@ -25,6 +24,8 @@ export function VoiceCallScreen({ call }) {
   const level = useAudioLevel(live ? remoteStream : null);
   const status = statusText({ phase, reconnecting, endReason, elapsed });
   const speaking = live && level > 0.08;
+  const audioRef = useRef(null);
+  const route = useAudioRoute(audioRef, live);
 
   return (
     <div
@@ -32,7 +33,7 @@ export function VoiceCallScreen({ call }) {
       role="dialog"
       aria-label={`Voice call with ${peer?.name}`}
     >
-      {remoteStream && <RemoteAudio stream={remoteStream} />}
+      {remoteStream && <RemoteAudio stream={remoteStream} audioRef={audioRef} />}
 
       <div className="flex flex-col items-center text-center">
         <div className="relative">
@@ -61,7 +62,9 @@ export function VoiceCallScreen({ call }) {
         )}
       </div>
 
-      {phase !== 'ended' && <CallControls voice micEnabled={micEnabled} connected={phase === 'active' || phase === 'connecting'} />}
+      {phase !== 'ended' && (
+        <CallControls voice micEnabled={micEnabled} connected={phase === 'active' || phase === 'connecting'} speaker={route.available ? route : null} />
+      )}
     </div>
   );
 }
