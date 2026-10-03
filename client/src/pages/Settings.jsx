@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bell, BellOff, Download, LogOut, Monitor, Moon, Pencil, ShieldCheck, Smartphone, Sun } from 'lucide-react';
+import { Bell, BellOff, Download, LogOut, Monitor, Moon, Pencil, Phone, PhoneOff, ShieldCheck, Smartphone, Sun, Video, VideoOff } from 'lucide-react';
 import { PageLayout } from '../components/common/PageLayout';
 import { BottomSheet } from '../components/common/BottomSheet';
 import { useAuth } from '../context/AuthContext';
@@ -37,6 +37,22 @@ function Row({ icon: Icon, title, description, children, onClick, tone }) {
       </span>
       {children}
     </Tag>
+  );
+}
+
+function Switch({ checked, onChange, label, disabled }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      disabled={disabled}
+      onClick={onChange}
+      className={`relative h-7 w-12 shrink-0 rounded-full transition disabled:opacity-60 ${checked ? 'bg-accent' : 'bg-surface-2 ring-1 ring-line'}`}
+    >
+      <span className={`absolute top-1 left-1 size-5 rounded-full bg-white shadow transition ${checked ? 'translate-x-5' : ''}`} />
+    </button>
   );
 }
 
@@ -104,6 +120,29 @@ export default function Settings() {
       setEditingName(false);
     } catch (err) {
       toast.error(err.message);
+    }
+  };
+
+  const [callSettings, setCallSettings] = useState({
+    allowVoiceCalls: user?.settings?.allowVoiceCalls !== false,
+    allowVideoCalls: user?.settings?.allowVideoCalls !== false,
+  });
+  const [callsBusy, setCallsBusy] = useState(false);
+  const toggleCallSetting = async (key) => {
+    const next = !callSettings[key];
+    const kind = key === 'allowVoiceCalls' ? 'voice' : 'video';
+    setCallSettings((c) => ({ ...c, [key]: next }));
+    setCallsBusy(true);
+    try {
+      const { user: updated } = await userApi.update({ settings: { [key]: next } });
+      applyUser(updated);
+      const Kind = kind[0].toUpperCase() + kind.slice(1);
+      toast.show(next ? `You can receive ${kind} calls again` : `${Kind} calls are off — ${peer?.name ?? 'they'} will be told`);
+    } catch (err) {
+      setCallSettings((c) => ({ ...c, [key]: !next }));
+      toast.error(err.message);
+    } finally {
+      setCallsBusy(false);
     }
   };
 
@@ -183,17 +222,7 @@ export default function Settings() {
       <Section title="Notifications">
         <Row icon={notificationsOn ? Bell : BellOff} title="Message & call alerts" description={NOTIFICATION_STATES[notifications.state]}>
           {canToggle && (
-            <button
-              type="button"
-              role="switch"
-              aria-checked={notificationsOn}
-              aria-label="Notifications"
-              disabled={notifications.busy}
-              onClick={toggleNotifications}
-              className={`relative h-7 w-12 shrink-0 rounded-full transition ${notificationsOn ? 'bg-accent' : 'bg-surface-2 ring-1 ring-line'}`}
-            >
-              <span className={`absolute top-1 left-1 size-5 rounded-full bg-white shadow transition ${notificationsOn ? 'translate-x-5' : ''}`} />
-            </button>
+            <Switch checked={notificationsOn} onChange={toggleNotifications} label="Notifications" disabled={notifications.busy} />
           )}
         </Row>
         <div className="border-b border-line px-4 py-3.5 last:border-b-0">
@@ -202,6 +231,23 @@ export default function Settings() {
           <Segmented label="Notification preview" value={preview} onChange={changePreview} options={PREVIEW_OPTIONS} />
         </div>
         {notifications.state === 'enabled' && <Row icon={Smartphone} title="Send a test notification" onClick={sendTest} />}
+      </Section>
+
+      <Section title="Calls">
+        <Row
+          icon={callSettings.allowVoiceCalls ? Phone : PhoneOff}
+          title="Allow voice calls"
+          description={callSettings.allowVoiceCalls ? 'Voice calls can ring on your devices' : 'Off — voice calls are declined and shown as missed'}
+        >
+          <Switch checked={callSettings.allowVoiceCalls} onChange={() => toggleCallSetting('allowVoiceCalls')} label="Allow voice calls" disabled={callsBusy} />
+        </Row>
+        <Row
+          icon={callSettings.allowVideoCalls ? Video : VideoOff}
+          title="Allow video calls"
+          description={callSettings.allowVideoCalls ? 'Video calls can ring on your devices' : 'Off — video calls are declined and shown as missed'}
+        >
+          <Switch checked={callSettings.allowVideoCalls} onChange={() => toggleCallSetting('allowVideoCalls')} label="Allow video calls" disabled={callsBusy} />
+        </Row>
       </Section>
 
       <Section title="App">

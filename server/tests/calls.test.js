@@ -171,6 +171,45 @@ describe('video calls', () => {
     expect(plain.call.type).toBe('video');
   });
 
+  it('respects voice and video call switches separately', async () => {
+    const caller = await connect(alex);
+    const callee = await connect(sam);
+    let rang = false;
+    callee.on('call:incoming', () => {
+      rang = true;
+    });
+
+    // Video off, voice still on.
+    const peerUpdate = waitFor(caller, 'user:updated');
+    const off = await sam.patch('/api/users/me').send({ settings: { allowVideoCalls: false } });
+    expect(off.body.user.settings).toMatchObject({ allowVideoCalls: false, allowVoiceCalls: true });
+    expect(await peerUpdate).toMatchObject({ acceptsVideoCalls: false, acceptsVoiceCalls: true });
+    expect((await alex.get('/api/conversation')).body.peer).toMatchObject({ acceptsVideoCalls: false, acceptsVoiceCalls: true });
+
+    const video = await emitAck(caller, 'call:initiate', { type: 'video' });
+    expect(video.ok).toBe(false);
+    expect(video.error).toMatchObject({ code: 'CALLS_OFF', message: "Sam isn't taking video calls right now." });
+    await delay(200);
+    expect(rang).toBe(false);
+    expect(await Call.findOne({ endReason: 'calls-off' }).sort({ _id: -1 }).lean()).toMatchObject({ status: 'missed', active: false, type: 'video' });
+
+    // Voice still rings.
+    const incoming = waitFor(callee, 'call:incoming');
+    const voice = await emitAck(caller, 'call:initiate', { type: 'audio' });
+    expect(voice.ok).toBe(true);
+    await incoming;
+    await emitAck(caller, 'call:end', { callId: voice.call.id });
+
+    // Voice off too.
+    await sam.patch('/api/users/me').send({ settings: { allowVoiceCalls: false } });
+    const voiceOff = await emitAck(caller, 'call:initiate', { type: 'audio' });
+    expect(voiceOff.error.message).toBe("Sam isn't taking voice calls right now.");
+
+    await sam.patch('/api/users/me').send({ settings: { allowVoiceCalls: true, allowVideoCalls: true } });
+    expect((await emitAck(caller, 'call:initiate', { type: 'video' })).ok).toBe(true);
+    expect((await sam.patch('/api/users/me').send({ settings: { allowVideoCalls: 'nope' } })).status).toBe(400);
+  });
+
   it('serves call history and ICE servers over REST', async () => {
     const history = await alex.get('/api/calls');
     expect(history.status).toBe(200);

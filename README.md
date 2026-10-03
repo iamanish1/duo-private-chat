@@ -60,6 +60,7 @@ It is built mobile-first. It installs as a PWA and is meant to feel like a nativ
 - 📞 next to 🎥 in the chat header (and in the sidebar and call history). Uses the microphone only, never the camera.
 - Tuned for clarity: Opus at 64 kbps, in-band FEC to repair packet loss, no DTX, high network priority, echo cancellation and noise suppression.
 - Large-avatar call screen that glows while the other person speaks; mute and hang up; "voice" or "video" shown in history and notifications.
+- **Settings → Calls → Allow voice calls / Allow video calls**: separate switches. When one is off, that kind of call never rings; the caller is told right away ("… isn't taking video calls right now") and the attempt is logged as missed. Saved per person, enforced by the server.
 
 **Video calls**
 - 1:1 WebRTC, with Socket.IO for signaling and STUN/TURN supplied by the server.

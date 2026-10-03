@@ -119,6 +119,17 @@ function fail(message) {
 // ---- Public actions -------------------------------------------------------------
 export async function startCall(peer, { kind = 'video' } = {}) {
   if (isInCall(s().phase)) return;
+  const accepts = kind === 'audio' ? peer?.acceptsVoiceCalls : peer?.acceptsVideoCalls;
+  if (accepts === false) {
+    // They switched this kind of call off: skip the mic/camera prompt. The server still
+    // logs the attempt as missed and replies with the reason.
+    try {
+      await emitWithAck('call:initiate', { type: kind });
+    } catch (err) {
+      toast.show(err.code === 'DISCONNECTED' ? "You're offline. Reconnect to call." : err.message);
+    }
+    return;
+  }
   clearTimeout(endedTimer);
   s().reset();
   s().patch({ phase: 'outgoing', role: 'caller', peer, kind });

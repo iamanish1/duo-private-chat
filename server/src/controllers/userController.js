@@ -15,8 +15,11 @@ export async function updateProfile(req, res) {
   const update = {};
   if (name) update.name = name;
   if (settings?.notificationPreview) update['settings.notificationPreview'] = settings.notificationPreview;
+  const callSettingChanged = ['allowVoiceCalls', 'allowVideoCalls'].filter((key) => typeof settings?.[key] === 'boolean');
+  for (const key of callSettingChanged) update[`settings.${key}`] = settings[key];
   const user = await User.findByIdAndUpdate(req.session.user._id, { $set: update }, { returnDocument: 'after' });
-  if (name) broadcastProfile(req, user);
+  // The other person's app needs the new name / call availability.
+  if (name || callSettingChanged.length) broadcastProfile(req, user);
   res.json({ user: selfUser(user) });
 }
 

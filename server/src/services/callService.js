@@ -1,6 +1,6 @@
 import { config } from '../config/env.js';
 import { Call, User } from '../models/index.js';
-import { conflict, forbidden, notFound } from '../utils/AppError.js';
+import { AppError, conflict, forbidden, notFound } from '../utils/AppError.js';
 import { sameId, toObjectId } from '../utils/ids.js';
 import { logger } from '../utils/logger.js';
 import { emitToConversation, emitToSocket, emitToUser, onScreenPushEndpoints } from '../sockets/realtime.js';
@@ -60,6 +60,16 @@ async function finish(callId, { status, reason }) {
 
 export async function initiateCall(session, socketId, type = 'video') {
   const { user, conversation, peerId } = session;
+
+  // The other person switched this kind of call off: never ring, log it as missed.
+  const receiver = await User.findById(peerId).select('name settings').lean();
+  const allowed = type === 'audio' ? receiver?.settings?.allowVoiceCalls : receiver?.settings?.allowVideoCalls;
+  if (allowed === false) {
+    const now = new Date();
+    await Call.create({ conversationId: conversation._id, callerId: user._id, receiverId: peerId, type, status: 'missed', active: false, endedAt: now, endReason: 'calls-off' });
+    throw new AppError(409, 'CALLS_OFF', `${receiver.name} isn't taking ${type === 'audio' ? 'voice' : 'video'} calls right now.`);
+  }
+
   let call;
   try {
     call = await Call.create({ conversationId: conversation._id, callerId: user._id, receiverId: peerId, type });

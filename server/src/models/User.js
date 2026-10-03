@@ -18,6 +18,9 @@ const userSchema = new mongoose.Schema(
     settings: {
       // What push notifications reveal: full text, only the sender, or nothing.
       notificationPreview: { type: String, enum: ['full', 'sender', 'hidden'], default: 'sender' },
+      // Off: incoming calls of that type are declined automatically and logged as missed.
+      allowVoiceCalls: { type: Boolean, default: true },
+      allowVideoCalls: { type: Boolean, default: true },
     },
   },
   { timestamps: true },

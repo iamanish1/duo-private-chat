@@ -79,7 +79,13 @@ export const pushUnsubscribeBody = z.object({ endpoint: z.string().max(1000) });
 
 export const updateProfileBody = z.object({
   name: z.string().trim().min(1).max(60).optional(),
-  settings: z.object({ notificationPreview: z.enum(['full', 'sender', 'hidden']).optional() }).optional(),
+  settings: z
+    .object({
+      notificationPreview: z.enum(['full', 'sender', 'hidden']).optional(),
+      allowVoiceCalls: z.boolean().optional(),
+      allowVideoCalls: z.boolean().optional(),
+    })
+    .optional(),
 });
 
 export const callsQuery = z.object({ before: optionalObjectId });

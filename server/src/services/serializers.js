@@ -13,6 +13,8 @@ export function publicUser(user, presence = {}) {
     avatarUrl: avatarUrl(user),
     isOnline: presence.isOnline ?? user.isOnline,
     lastSeen: presence.lastSeen ?? user.lastSeen,
+    acceptsVoiceCalls: user.settings?.allowVoiceCalls !== false,
+    acceptsVideoCalls: user.settings?.allowVideoCalls !== false,
   };
 }
 
@@ -20,7 +22,11 @@ export function selfUser(user) {
   return {
     ...publicUser(user),
     email: user.email,
-    settings: { notificationPreview: user.settings?.notificationPreview ?? 'sender' },
+    settings: {
+      notificationPreview: user.settings?.notificationPreview ?? 'sender',
+      allowVoiceCalls: user.settings?.allowVoiceCalls !== false,
+      allowVideoCalls: user.settings?.allowVideoCalls !== false,
+    },
   };
 }
 
