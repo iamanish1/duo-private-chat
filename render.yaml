@@ -1,0 +1,46 @@
+# Render Blueprint: one web service that builds the client and serves it from
+# Express (same origin → first-party cookies work on iOS Safari, WebSockets
+# share the host). Secrets marked `sync: false` are entered in the dashboard.
+services:
+  - type: web
+    name: duo
+    runtime: node
+    plan: starter # free instances sleep, which breaks realtime presence and calls
+    buildCommand: npm ci --include=dev --ignore-scripts && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: TRUST_PROXY
+        value: "1"
+      - key: SERVE_CLIENT
+        value: "true"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MONGODB_URI
+        sync: false
+      - key: AUTHORIZED_USER_1_EMAIL
+        sync: false
+      - key: AUTHORIZED_USER_2_EMAIL
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_SUBJECT
+        sync: false
+      - key: TURN_SERVER_URL
+        sync: false
+      - key: TURN_SERVER_USERNAME
+        sync: false
+      - key: TURN_SERVER_CREDENTIAL
+        sync: false

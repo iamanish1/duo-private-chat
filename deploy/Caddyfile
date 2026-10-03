@@ -1,0 +1,14 @@
+# Automatic HTTPS for your domain (Let's Encrypt). WebSockets are proxied as-is.
+{$DOMAIN} {
+	encode zstd gzip
+
+	# Uploads up to the app's video limit (100 MB) plus multipart overhead.
+	request_body {
+		max_size 110MB
+	}
+
+	reverse_proxy app:5000 {
+		# Keep long-lived Socket.IO connections open.
+		flush_interval -1
+	}
+}

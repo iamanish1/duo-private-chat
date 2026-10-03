@@ -1,0 +1,11 @@
+node_modules
+**/node_modules
+client/dist
+client/dev-dist
+server/uploads
+server/.data
+.env
+.env.*
+.git
+coverage
+*.log

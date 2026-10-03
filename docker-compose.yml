@@ -1,0 +1,27 @@
+# Local MongoDB for development:  docker compose up -d mongo
+# Full production-like stack:     docker compose --profile app up --build
+services:
+  mongo:
+    image: mongo:8
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  app:
+    profiles: ["app"]
+    build: .
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      MONGODB_URI: mongodb://mongo:27017/duo
+      SERVE_CLIENT: "true"
+      CLIENT_URL: ""
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mongo
+
+volumes:
+  mongo-data:

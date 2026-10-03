@@ -1,0 +1,51 @@
+import { Router } from 'express';
+import { requireAuth } from '../middleware/auth.js';
+import { validate } from '../middleware/validate.js';
+import { loginLimiter, uploadLimiter } from '../middleware/security.js';
+import { avatarUpload, messageUpload } from '../middleware/upload.js';
+import * as schemas from '../validators/schemas.js';
+import * as auth from '../controllers/authController.js';
+import { getConversation } from '../controllers/conversationController.js';
+import * as messages from '../controllers/messageController.js';
+import * as media from '../controllers/mediaController.js';
+import * as users from '../controllers/userController.js';
+import * as notifications from '../controllers/notificationController.js';
+import * as calls from '../controllers/callController.js';
+
+export const router = Router();
+
+router.get('/health', (req, res) => res.json({ ok: true }));
+
+// ---- Auth (no signup route exists, by design) ----------------------------
+router.post('/auth/login', loginLimiter, validate({ body: schemas.loginBody }), auth.login);
+router.post('/auth/logout', auth.logout);
+router.get('/auth/me', requireAuth, auth.me);
+router.post('/auth/logout-all', requireAuth, auth.logoutEverywhere);
+
+// Everything below requires one of the two authorized people.
+router.use(requireAuth);
+
+router.get('/conversation', getConversation);
+
+router.get('/messages', validate({ query: schemas.listMessagesQuery }), messages.list);
+router.post('/messages', validate({ body: schemas.sendMessageBody }), messages.create);
+router.get('/messages/search', validate({ query: schemas.searchQuery }), messages.search);
+router.get('/messages/media', validate({ query: schemas.mediaListQuery }), messages.media);
+router.patch('/messages/:id/read', validate({ params: schemas.idParams }), messages.markRead);
+router.put('/messages/:id/reaction', validate({ params: schemas.idParams, body: schemas.reactionBody }), messages.react);
+router.delete('/messages/:id', validate({ params: schemas.idParams }), messages.remove);
+
+router.post('/media/upload', uploadLimiter, messageUpload, media.uploadMessageMedia);
+router.get('/media/file/:key', media.serveLocalFile);
+
+router.patch('/users/me', validate({ body: schemas.updateProfileBody }), users.updateProfile);
+router.post('/users/me/avatar', uploadLimiter, avatarUpload, users.uploadAvatar);
+router.delete('/users/me/avatar', users.removeAvatar);
+
+router.get('/notifications/public-key', notifications.getPublicKey);
+router.post('/notifications/subscribe', validate({ body: schemas.pushSubscribeBody }), notifications.subscribe);
+router.delete('/notifications/subscribe', validate({ body: schemas.pushUnsubscribeBody }), notifications.unsubscribe);
+router.post('/notifications/test', notifications.sendTest);
+
+router.get('/calls', validate({ query: schemas.callsQuery }), calls.history);
+router.get('/calls/ice-servers', calls.iceServers);

@@ -1,0 +1,98 @@
+# Production stack for a single always-on server (e.g. Oracle Cloud Always Free).
+# Run from the repo root via ./deploy/duo.sh (it passes --env-file .env).
+#
+#   caddy  :80/:443  → HTTPS (Let's Encrypt) + reverse proxy incl. WebSockets
+#   app    :5000     → Duo (client + API + Socket.IO), internal only
+#   mongo  :27017    → MongoDB, internal only (never exposed to the internet)
+#   coturn :3478     → TURN relay for calls on mobile networks (host network)
+name: duo
+
+services:
+  app:
+    build:
+      context: ..
+      args:
+        VITE_APP_NAME: ${VITE_APP_NAME:-Duo}
+    restart: unless-stopped
+    env_file: ../.env
+    environment:
+      NODE_ENV: production
+      PORT: "5000"
+      SERVE_CLIENT: "true"
+      CLIENT_URL: ""
+      TRUST_PROXY: "1"
+      MONGODB_URI: mongodb://mongo:27017/duo
+      LOCAL_UPLOAD_DIR: /data/uploads
+      STUN_URLS: stun:${DOMAIN}:3478,stun:stun.l.google.com:19302
+      TURN_SERVER_URL: turn:${DOMAIN}:3478?transport=udp,turn:${DOMAIN}:3478?transport=tcp
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      - mongo
+    logging: &logging
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  mongo:
+    image: mongo:8
+    restart: unless-stopped
+    command: ["--wiredTigerCacheSizeGB", "0.5"]
+    volumes:
+      - mongo-data:/data/db
+    logging: *logging
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+    logging: *logging
+
+  coturn:
+    image: coturn/coturn:latest
+    restart: unless-stopped
+    # TURN needs real UDP ports, so it shares the host's network.
+    network_mode: host
+    command:
+      - -n
+      - --log-file=stdout
+      - --listening-port=3478
+      - --min-port=49160
+      - --max-port=49200
+      - --use-auth-secret
+      - --static-auth-secret=${TURN_SHARED_SECRET}
+      - --realm=${DOMAIN}
+      # Oracle VMs sit behind 1:1 NAT: advertise the public IP, bind the private one.
+      - --external-ip=${PUBLIC_IP}/${PRIVATE_IP}
+      - --relay-ip=${PRIVATE_IP}
+      - --fingerprint
+      - --no-cli
+      - --no-tls
+      - --no-dtls
+      - --no-multicast-peers
+      # Never relay into private networks (prevents using TURN to reach the VM's internals).
+      - --denied-peer-ip=0.0.0.0-0.255.255.255
+      - --denied-peer-ip=10.0.0.0-10.255.255.255
+      - --denied-peer-ip=127.0.0.0-127.255.255.255
+      - --denied-peer-ip=169.254.0.0-169.254.255.255
+      - --denied-peer-ip=172.16.0.0-172.31.255.255
+      - --denied-peer-ip=192.168.0.0-192.168.255.255
+      - --total-quota=20
+      - --user-quota=10
+    logging: *logging
+
+volumes:
+  mongo-data:
+  uploads:
+  caddy-data:
+  caddy-config:
