@@ -1,11 +1,21 @@
-# Render Blueprint: one web service that builds the client and serves it from
-# Express (same origin → first-party cookies work on iOS Safari, WebSockets
-# share the host). Secrets marked `sync: false` are entered in the dashboard.
+# Render Blueprint — FREE plan, no credit card.
+# One web service builds the client and serves it from Express (same origin:
+# first-party cookies work on iOS Safari; WebSockets share the host).
+#
+# Free-plan notes:
+#  - The disk is wiped on every restart/deploy, so media MUST go to Cloudinary
+#    (STORAGE_DRIVER=cloudinary makes the app refuse to start without it).
+#  - The service sleeps after 15 min without traffic; an UptimeRobot monitor on
+#    /api/health every 5 minutes keeps it awake (fits in 750 free hours/month).
+#  - Use BREVO_API_KEY for email: free instances may block SMTP ports.
+# Variables marked `sync: false` are entered in the Render dashboard.
 services:
   - type: web
     name: duo
     runtime: node
-    plan: starter # free instances sleep, which breaks realtime presence and calls
+    plan: free
+    region: singapore
+    branch: main
     buildCommand: npm ci --include=dev --ignore-scripts && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
@@ -18,6 +28,10 @@ services:
         value: "1"
       - key: SERVE_CLIENT
         value: "true"
+      - key: STORAGE_DRIVER
+        value: cloudinary
+      - key: VITE_APP_NAME
+        value: Duo
       - key: JWT_SECRET
         generateValue: true
       - key: MONGODB_URI
@@ -44,3 +58,15 @@ services:
         sync: false
       - key: TURN_SERVER_CREDENTIAL
         sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: LOGIN_ALERT_ACCOUNTS
+        sync: false
+      - key: LOGIN_ALERT_TO
+        sync: false
+      - key: LOGIN_ALERT_MODE
+        value: both
+      - key: ALERT_TIME_ZONE
+        value: Asia/Kolkata

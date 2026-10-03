@@ -69,6 +69,8 @@ const schema = z.object({
   SMTP_USER: optionalString,
   SMTP_PASS: optionalString,
   EMAIL_FROM: optionalString,
+  EMAIL_FROM_NAME: optionalString,
+  BREVO_API_KEY: optionalString,
 
   LOGIN_ALERT_ACCOUNTS: optionalString,
   LOGIN_ALERT_TO: optionalString,
@@ -147,6 +149,8 @@ function buildConfig() {
       user: env.SMTP_USER,
       pass: env.SMTP_PASS,
       from: env.EMAIL_FROM || env.SMTP_USER,
+      fromName: env.EMAIL_FROM_NAME || process.env.VITE_APP_NAME || 'Duo',
+      brevoApiKey: env.BREVO_API_KEY,
     },
     loginAlerts: {
       accounts: csv(env.LOGIN_ALERT_ACCOUNTS).map((e) => e.toLowerCase()),

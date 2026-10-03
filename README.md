@@ -279,6 +279,7 @@ All variables live in one `.env` at the repo root (see [.env.example](.env.examp
 | `TURN_SERVER_USERNAME`, `TURN_SERVER_CREDENTIAL` | | Static TURN credentials, **or** … |
 | `TURN_SHARED_SECRET` | | … coturn `use-auth-secret`, which issues 6-hour credentials per user |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM` | for alerts | Outgoing mail server. Gmail: `smtp.gmail.com`, `587`, your address and an App Password. |
+| `BREVO_API_KEY` | | Send email via Brevo's HTTPS API instead of SMTP (for hosts that block SMTP). `EMAIL_FROM` must be a verified Brevo sender. |
 | `LOGIN_ALERT_ACCOUNTS` | | Comma-separated account emails that trigger alerts |
 | `LOGIN_ALERT_TO` | | Comma-separated addresses that receive alerts |
 | `LOGIN_ALERT_MODE` | | `signin` (password sign-in), `online` (opens the app after being away), or `both` |
