@@ -59,6 +59,11 @@ describe('notification payload privacy', () => {
     expect(buildMessageNotification({ sender, message, preview: 'full' }).body).toBe('our secret plans');
   });
 
+  it('labels voice call notifications', () => {
+    expect(buildCallNotification({ caller: sender, callId: '1', type: 'audio' }).body).toBe('Incoming voice call');
+    expect(buildCallNotification({ caller: sender, callId: '1' }).body).toBe('Incoming video call');
+  });
+
   it('hides the caller name in hidden mode', () => {
     expect(buildCallNotification({ caller: sender, preview: 'hidden', callId: '1' }).title).toBe('Incoming call');
   });

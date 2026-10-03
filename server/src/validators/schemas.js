@@ -93,6 +93,7 @@ export const socketSchemas = {
   'message:delete': z.object({ id: objectId }),
   // endpoint: this device's Web Push endpoint, so pushes can skip the device on screen.
   'presence:visibility': z.object({ visible: z.boolean(), endpoint: z.url({ protocol: /^https$/ }).max(1000).nullable().optional() }),
+  'call:initiate': z.object({ type: z.enum(['audio', 'video']).default('video') }),
   'call:accept': z.object({ callId: objectId }),
   'call:reject': z.object({ callId: objectId }),
   'call:end': z.object({ callId: objectId }),

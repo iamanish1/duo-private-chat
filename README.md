@@ -56,6 +56,11 @@ It is built mobile-first. It installs as a PWA and is meant to feel like a nativ
 - Live level meter while recording, and a waveform you can tap to seek during playback. Playback speed 1×/1.5×/2×, and only one note plays at a time.
 - Recorded with MediaRecorder: Opus/WebM on Chrome, Edge and Firefox, AAC/MP4 on Safari. The server checks the actual bytes against an audio allow-list and enforces size and length limits. Cloudinary delivers MP3 so every browser can play every note.
 
+**Voice calls**
+- 📞 next to 🎥 in the chat header (and in the sidebar and call history). Uses the microphone only, never the camera.
+- Tuned for clarity: Opus at 64 kbps, in-band FEC to repair packet loss, no DTX, high network priority, echo cancellation and noise suppression.
+- Large-avatar call screen that glows while the other person speaks; mute and hang up; "voice" or "video" shown in history and notifications.
+
 **Video calls**
 - 1:1 WebRTC, with Socket.IO for signaling and STUN/TURN supplied by the server.
 - Incoming-call screen, accept/decline, mute, camera on/off, front/back camera switch, call timer, draggable picture-in-picture, auto-hiding controls.

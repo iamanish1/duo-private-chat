@@ -13,16 +13,18 @@ function Control({ label, active = false, onClick, children, disabled }) {
   );
 }
 
-export function CallControls({ micEnabled, cameraEnabled, canSwitchCamera, connected }) {
+export function CallControls({ micEnabled, cameraEnabled, canSwitchCamera, connected, voice = false }) {
   return (
     <div className="flex items-start justify-center gap-5 sm:gap-7">
       <Control label={micEnabled ? 'Mute' : 'Unmute'} active={!micEnabled} onClick={toggleMic}>
         {micEnabled ? <Mic size={24} /> : <MicOff size={24} />}
       </Control>
-      <Control label={cameraEnabled ? 'Camera off' : 'Camera on'} active={!cameraEnabled} onClick={toggleCamera}>
-        {cameraEnabled ? <Video size={24} /> : <VideoOff size={24} />}
-      </Control>
-      {canSwitchCamera && (
+      {!voice && (
+        <Control label={cameraEnabled ? 'Camera off' : 'Camera on'} active={!cameraEnabled} onClick={toggleCamera}>
+          {cameraEnabled ? <Video size={24} /> : <VideoOff size={24} />}
+        </Control>
+      )}
+      {!voice && canSwitchCamera && (
         <Control label="Flip" onClick={switchCamera} disabled={!connected || !cameraEnabled}>
           <SwitchCamera size={24} />
         </Control>

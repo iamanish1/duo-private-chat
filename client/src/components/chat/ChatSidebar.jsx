@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { History, Images, Search, Settings, ShieldCheck, UserRound, Video } from 'lucide-react';
+import { History, Images, Phone, Search, Settings, ShieldCheck, UserRound, Video } from 'lucide-react';
 import { Link } from 'react-router';
 import { Avatar } from '../common/Avatar';
 import { PresenceLine } from './ChatHeader';
@@ -41,9 +41,14 @@ export function ChatSidebar({ onCall, onOpenMedia, callDisabled }) {
           <p className="mt-1 text-sm text-muted">
             <PresenceLine peer={peer} typing={typing} now={now} />
           </p>
-          <button type="button" onClick={onCall} disabled={callDisabled} className="mt-5 flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-on-accent shadow-soft transition hover:bg-accent-strong disabled:opacity-50">
-            <Video size={18} /> Video call
-          </button>
+          <div className="mt-5 flex gap-2">
+            <button type="button" onClick={() => onCall('audio')} disabled={callDisabled} className="flex items-center gap-2 rounded-full bg-surface-2 px-5 py-2.5 text-sm font-semibold text-ink shadow-soft transition hover:brightness-95 disabled:opacity-50">
+              <Phone size={17} /> Voice call
+            </button>
+            <button type="button" onClick={() => onCall('video')} disabled={callDisabled} className="flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-on-accent shadow-soft transition hover:bg-accent-strong disabled:opacity-50">
+              <Video size={18} /> Video call
+            </button>
+          </div>
         </div>
 
         <nav className="flex flex-col gap-1">

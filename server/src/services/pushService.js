@@ -72,13 +72,13 @@ export function buildMessageNotification({ sender, message, preview }) {
   return { ...base, title: sender.name, body: `Sent you ${what}` };
 }
 
-export function buildCallNotification({ caller, preview, callId }) {
+export function buildCallNotification({ caller, preview, callId, type = 'video' }) {
   return {
     type: 'call',
     tag: `duo-call-${callId}`,
     url: '/',
     title: preview === 'hidden' ? 'Incoming call' : caller.name,
-    body: 'Incoming video call',
+    body: type === 'audio' ? 'Incoming voice call' : 'Incoming video call',
     requireInteraction: true,
   };
 }

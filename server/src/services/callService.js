@@ -52,17 +52,17 @@ async function finish(callId, { status, reason }) {
   emitToConversation(call.conversationId, 'call:ended', { call: serializeCall(call), reason });
 
   if (finalStatus === 'missed' && reason === 'no-answer') {
-    sendToUser(call.receiverId, { type: 'missed-call', tag: `duo-call-${callId}`, url: '/', title: 'Missed video call', body: 'Tap to call back' })
+    sendToUser(call.receiverId, { type: 'missed-call', tag: `duo-call-${callId}`, url: '/', title: call.type === 'audio' ? 'Missed voice call' : 'Missed video call', body: 'Tap to call back' })
       .catch(() => logger.warn('Missed-call push failed'));
   }
   return call;
 }
 
-export async function initiateCall(session, socketId) {
+export async function initiateCall(session, socketId, type = 'video') {
   const { user, conversation, peerId } = session;
   let call;
   try {
-    call = await Call.create({ conversationId: conversation._id, callerId: user._id, receiverId: peerId });
+    call = await Call.create({ conversationId: conversation._id, callerId: user._id, receiverId: peerId, type });
   } catch (err) {
     if (err.code === 11000) throw conflict('A call is already in progress.', 'CALL_BUSY');
     throw err;
@@ -77,7 +77,7 @@ export async function initiateCall(session, socketId) {
   onScreenPushEndpoints(peerId)
     .then(async (skipEndpoints) => {
       const receiver = await User.findById(peerId).select('settings').lean();
-      const payload = buildCallNotification({ caller: user, callId: id, preview: receiver?.settings?.notificationPreview });
+      const payload = buildCallNotification({ caller: user, callId: id, type, preview: receiver?.settings?.notificationPreview });
       await sendToUser(peerId, payload, { urgency: 'high', ttl: Math.ceil(config.calls.ringTimeoutMs / 1000), skipEndpoints });
     })
     .catch(() => logger.warn('Incoming-call push failed'));

@@ -7,7 +7,8 @@ const callSchema = new mongoose.Schema(
     conversationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Conversation', required: true },
     callerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     receiverId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    type: { type: String, enum: ['video'], default: 'video' },
+    // audio = voice call (microphone only), video = camera + microphone.
+    type: { type: String, enum: ['audio', 'video'], default: 'video' },
     status: { type: String, enum: CALL_STATUSES, default: 'ringing' },
     // true while ringing/accepted; a partial unique index allows one live call.
     active: { type: Boolean, default: true },

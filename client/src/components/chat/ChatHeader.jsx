@@ -1,4 +1,4 @@
-import { EllipsisVertical, Video } from 'lucide-react';
+import { EllipsisVertical, Phone, Video } from 'lucide-react';
 import { Avatar } from '../common/Avatar';
 import { IconButton } from '../common/IconButton';
 import { useChatStore } from '../../store/chatStore';
@@ -21,6 +21,7 @@ export function PresenceLine({ peer, typing, now }) {
 }
 
 export function ChatHeader({ onCall, onMenu, onProfile, callDisabled }) {
+  // onCall(kind): 'audio' (voice) or 'video'.
   const peer = useChatStore((s) => s.peer);
   const typing = useChatStore((s) => s.peerTyping);
   const now = useNow();
@@ -37,7 +38,10 @@ export function ChatHeader({ onCall, onMenu, onProfile, callDisabled }) {
             </span>
           </span>
         </button>
-        <IconButton label={`Video call ${peer?.name ?? ''}`} onClick={onCall} disabled={callDisabled}>
+        <IconButton label={`Voice call ${peer?.name ?? ''}`} onClick={() => onCall('audio')} disabled={callDisabled}>
+          <Phone size={21} />
+        </IconButton>
+        <IconButton label={`Video call ${peer?.name ?? ''}`} onClick={() => onCall('video')} disabled={callDisabled}>
           <Video size={23} />
         </IconButton>
         <IconButton label="Menu" onClick={onMenu} className="lg:hidden">

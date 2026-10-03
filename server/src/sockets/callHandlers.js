@@ -5,7 +5,7 @@ const SIGNAL_EVENTS = ['webrtc:offer', 'webrtc:answer', 'webrtc:ice-candidate', 
 export function registerCallHandlers(socket, on) {
   const { session } = socket.data;
 
-  on('call:initiate', async () => ({ call: await calls.initiateCall(session, socket.id) }));
+  on('call:initiate', async ({ type }) => ({ call: await calls.initiateCall(session, socket.id, type) }));
   on('call:accept', async ({ callId }) => ({ call: await calls.acceptCall(session, callId, socket.id) }));
   on('call:reject', async ({ callId }) => ({ call: await calls.rejectCall(session, callId) }));
   on('call:end', async ({ callId }) => ({ call: await calls.endCall(session, callId) }));

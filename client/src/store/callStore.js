@@ -3,6 +3,7 @@ import { create } from 'zustand';
 // phase: idle → outgoing | incoming → connecting → active → ended → idle
 const initialState = {
   phase: 'idle',
+  kind: 'video', // video | audio (voice call)
   call: null,
   role: null, // caller | callee
   peer: null,

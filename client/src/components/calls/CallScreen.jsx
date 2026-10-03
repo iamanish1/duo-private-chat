@@ -6,25 +6,7 @@ import { VideoTile } from './VideoTile';
 import { RemoteVideo } from './RemoteVideo';
 import { DraggablePip } from './DraggablePip';
 import { CallControls } from './CallControls';
-import { formatDuration } from '../../utils/format';
-
-function useElapsed(since) {
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    if (!since) return undefined;
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, [since]);
-  return since ? Math.floor((now - since) / 1000) : 0;
-}
-
-function statusText({ phase, reconnecting, endReason, elapsed }) {
-  if (phase === 'ended') return endReason || 'Call ended';
-  if (reconnecting) return 'Reconnecting…';
-  if (phase === 'outgoing') return 'Calling…';
-  if (phase === 'connecting') return 'Connecting…';
-  return formatDuration(elapsed);
-}
+import { statusText, useElapsed } from './callStatus';
 
 /** Portrait-first call UI: remote video full-screen, local video as a draggable PiP. */
 export function CallScreen({ call }) {

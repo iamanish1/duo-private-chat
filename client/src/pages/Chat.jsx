@@ -56,7 +56,7 @@ export default function Chat() {
 
   const onActions = useCallback((message) => setActionsFor(message), []);
   const onOpenMedia = useCallback((message) => setViewing(message), []);
-  const onCall = () => peer && startCall(peer);
+  const onCall = (kind) => peer && startCall(peer, { kind });
   const callDisabled = !peer || isInCall(callPhase);
 
   return (

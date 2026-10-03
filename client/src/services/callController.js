@@ -30,14 +30,16 @@ async function acquireWakeLock() {
 }
 
 async function openLocalMedia() {
-  if (!isWebRTCSupported()) throw new Error('Video calls are not supported in this browser. Try the latest Chrome, Safari or Firefox.');
+  if (!isWebRTCSupported()) throw new Error('Calls are not supported in this browser. Try the latest Chrome, Safari or Firefox.');
+  const video = s().kind === 'video';
   let stream;
   try {
-    stream = await getLocalMedia(s().facingMode);
+    // Voice calls ask for the microphone only — no camera prompt.
+    stream = await getLocalMedia(s().facingMode, { video });
   } catch (err) {
-    throw new Error(describeMediaError(err));
+    throw new Error(describeMediaError(err, { video }));
   }
-  s().patch({ localStream: stream, micEnabled: true, cameraEnabled: true, canSwitchCamera: await hasMultipleCameras() });
+  s().patch({ localStream: stream, micEnabled: true, cameraEnabled: video, canSwitchCamera: video && (await hasMultipleCameras()) });
   return stream;
 }
 
@@ -65,7 +67,8 @@ function createSession(stream) {
       }
     },
   });
-  acquireWakeLock();
+  // Keep the screen on for video; voice calls may let it sleep.
+  if (s().kind === 'video') acquireWakeLock();
 }
 
 /** Only the caller makes offers (no glare); the callee asks for a restart. */
@@ -114,16 +117,16 @@ function fail(message) {
 }
 
 // ---- Public actions -------------------------------------------------------------
-export async function startCall(peer) {
+export async function startCall(peer, { kind = 'video' } = {}) {
   if (isInCall(s().phase)) return;
   clearTimeout(endedTimer);
   s().reset();
-  s().patch({ phase: 'outgoing', role: 'caller', peer });
+  s().patch({ phase: 'outgoing', role: 'caller', peer, kind });
   try {
     await openLocalMedia();
     await loadIceServers();
     if (s().phase !== 'outgoing') return;
-    const { call } = await emitWithAck('call:initiate');
+    const { call } = await emitWithAck('call:initiate', { type: kind });
     if (s().phase !== 'outgoing') {
       emit('call:end', { callId: call.id }); // hung up while we were dialing
       return;
@@ -196,7 +199,7 @@ export const callSocketHandlers = {
     if (isInCall(s().phase)) return;
     clearTimeout(endedTimer);
     s().reset();
-    s().patch({ phase: 'incoming', role: 'callee', call, peer: caller });
+    s().patch({ phase: 'incoming', role: 'callee', call, peer: caller, kind: call.type === 'audio' ? 'audio' : 'video' });
     startRingtone();
   },
 

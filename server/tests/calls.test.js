@@ -147,6 +147,30 @@ describe('video calls', () => {
     expect((await ended).reason).toBe('connection-lost');
   });
 
+  it('supports voice calls end to end', async () => {
+    const caller = await connect(alex);
+    const callee = await connect(sam);
+    const incoming = waitFor(callee, 'call:incoming');
+    const started = await emitAck(caller, 'call:initiate', { type: 'audio' });
+    expect(started.call.type).toBe('audio');
+    expect((await incoming).call.type).toBe('audio');
+    const accepted = await emitAck(callee, 'call:accept', { callId: started.call.id });
+    expect(accepted.call).toMatchObject({ type: 'audio', status: 'accepted' });
+    await emitAck(caller, 'call:end', { callId: started.call.id });
+    expect((await Call.findById(started.call.id).lean()).type).toBe('audio');
+    const history = await alex.get('/api/calls');
+    expect(history.body.calls.find((c) => c.id === started.call.id).type).toBe('audio');
+  });
+
+  it('defaults to video and rejects unknown call types', async () => {
+    const caller = await connect(alex);
+    await connect(sam);
+    const bad = await emitAck(caller, 'call:initiate', { type: 'hologram' });
+    expect(bad.ok).toBe(false);
+    const plain = await emitAck(caller, 'call:initiate');
+    expect(plain.call.type).toBe('video');
+  });
+
   it('serves call history and ICE servers over REST', async () => {
     const history = await alex.get('/api/calls');
     expect(history.status).toBe(200);
