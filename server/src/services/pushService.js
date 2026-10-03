@@ -7,7 +7,13 @@ if (config.push.enabled) {
   webpush.setVapidDetails(config.push.subject, config.push.publicKey, config.push.privateKey);
 }
 
-export const isPushEnabled = () => config.push.enabled;
+// Tests inject a fake sender instead of contacting real push services.
+let sendOverride = null;
+export function setPushSender(fn) {
+  sendOverride = fn;
+}
+
+export const isPushEnabled = () => config.push.enabled || Boolean(sendOverride);
 
 export async function saveSubscription(userId, subscription, userAgent) {
   // The same browser may switch accounts; the endpoint follows the latest owner.
@@ -27,16 +33,17 @@ export async function removeSubscription(userId, endpoint) {
  * Sends an encrypted push to every subscribed device of a user. Expired
  * subscriptions (404/410) are pruned. Never throws: push is best-effort.
  */
-export async function sendToUser(userId, payload, { ttl = 60 * 60, urgency = 'normal', topic } = {}) {
-  if (!config.push.enabled) return { sent: 0 };
-  const subscriptions = await PushSubscription.find({ userId }).lean();
+export async function sendToUser(userId, payload, { ttl = 60 * 60, urgency = 'normal', topic, skipEndpoints = [] } = {}) {
+  if (!isPushEnabled()) return { sent: 0 };
+  const skip = new Set(skipEndpoints);
+  const subscriptions = (await PushSubscription.find({ userId }).lean()).filter((sub) => !skip.has(sub.endpoint));
   const body = JSON.stringify(payload);
   let sent = 0;
 
   await Promise.all(
     subscriptions.map(async (sub) => {
       try {
-        await webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, body, { TTL: ttl, urgency, topic });
+        await (sendOverride ?? webpush.sendNotification)({ endpoint: sub.endpoint, keys: sub.keys }, body, { TTL: ttl, urgency, topic });
         sent += 1;
         await PushSubscription.updateOne({ _id: sub._id }, { $set: { lastUsedAt: new Date() } });
       } catch (err) {

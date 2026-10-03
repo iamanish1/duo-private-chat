@@ -80,7 +80,7 @@ export function AuthProvider({ children }) {
       },
       async logout({ everywhere = false } = {}) {
         // Don't keep pushing to a device someone signed out of.
-        await disableNotifications().catch(() => {});
+        await disableNotifications({ optOut: false }).catch(() => {});
         await (everywhere ? authApi.logoutEverywhere() : authApi.logout()).catch(() => {});
         endSession(null);
       },

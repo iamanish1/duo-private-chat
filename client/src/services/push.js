@@ -38,11 +38,8 @@ export async function getPushSubscription() {
   }
 }
 
-/**
- * Requests permission (must run from a user gesture), then subscribes this
- * device for Web Push. Returns 'subscribed' | 'local-only' | 'denied' | 'unsupported'.
- */
 const PRIVATE_HINT_KEY = 'duo-private-window';
+const OPT_OUT_KEY = 'duo-push-opted-out';
 
 /** Set when the browser refused notifications the way private windows do. */
 export function looksLikePrivateWindow() {
@@ -53,8 +50,90 @@ export function looksLikePrivateWindow() {
   }
 }
 
+// Remembers a deliberate "turn off" so the app doesn't silently re-subscribe.
+const optOut = {
+  get() {
+    try {
+      return localStorage.getItem(OPT_OUT_KEY) === '1';
+    } catch {
+      return false;
+    }
+  },
+  set(value) {
+    try {
+      if (value) localStorage.setItem(OPT_OUT_KEY, '1');
+      else localStorage.removeItem(OPT_OUT_KEY);
+    } catch {
+      // ignore
+    }
+  },
+};
+
+// This device's current push endpoint, shared with the realtime connection so
+// the server can skip the device that already has the chat on screen.
+let currentEndpoint = null;
+const endpointListeners = new Set();
+const setEndpoint = (endpoint) => {
+  if (endpoint === currentEndpoint) return;
+  currentEndpoint = endpoint;
+  endpointListeners.forEach((fn) => fn(endpoint));
+};
+export const getPushEndpoint = () => currentEndpoint;
+export function onPushEndpointChange(fn) {
+  endpointListeners.add(fn);
+  return () => endpointListeners.delete(fn);
+}
+
+const sameKey = (subscription, publicKey) => {
+  const current = subscription.options?.applicationServerKey;
+  if (!current) return true; // older browsers don't expose it; assume fine
+  const expected = urlBase64ToUint8Array(publicKey);
+  const actual = new Uint8Array(current);
+  return actual.length === expected.length && actual.every((b, i) => b === expected[i]);
+};
+
+/**
+ * Makes sure this device has a live push subscription registered to the
+ * signed-in person. Re-creates it if the browser dropped it or the server key
+ * changed. Never prompts: only runs when permission is already granted.
+ */
+async function subscribeDevice(publicKey) {
+  const registration = await readyRegistration();
+  let subscription = await registration.pushManager.getSubscription();
+  if (subscription && !sameKey(subscription, publicKey)) {
+    await subscription.unsubscribe().catch(() => {});
+    subscription = null;
+  }
+  subscription ??= await registration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(publicKey),
+  });
+  await notificationApi.subscribe(subscription.toJSON());
+  setEndpoint(subscription.endpoint);
+  return subscription.endpoint;
+}
+
+export async function ensurePushSubscription() {
+  if (!pushSupported() || Notification.permission !== 'granted' || optOut.get()) {
+    setEndpoint(null);
+    return null;
+  }
+  try {
+    const { enabled, publicKey } = await notificationApi.publicKey();
+    if (!enabled) return null;
+    return await subscribeDevice(publicKey);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Requests permission (must run from a user gesture), then subscribes this
+ * device for Web Push. Returns 'subscribed' | 'local-only' | 'denied' | 'private' | 'unsupported'.
+ */
 export async function enableNotifications() {
   if (!notificationsSupported()) return 'unsupported';
+  optOut.set(false);
   const wasUnasked = Notification.permission === 'default';
   const askedAt = performance.now();
   const permission = await Notification.requestPermission();
@@ -76,15 +155,7 @@ export async function enableNotifications() {
   if (!enabled) return 'local-only';
 
   try {
-    const registration = await readyRegistration();
-    let subscription = await registration.pushManager.getSubscription();
-    if (!subscription) {
-      subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(publicKey),
-      });
-    }
-    await notificationApi.subscribe(subscription.toJSON());
+    await subscribeDevice(publicKey);
     return 'subscribed';
   } catch {
     // Push can be unavailable (private windows, some browsers) even with
@@ -93,7 +164,13 @@ export async function enableNotifications() {
   }
 }
 
-export async function disableNotifications() {
+/**
+ * Removes this device's subscription. With `optOut` (a deliberate "turn off")
+ * the app stops re-subscribing automatically; signing out does not opt out.
+ */
+export async function disableNotifications({ optOut: rememberChoice = true } = {}) {
+  if (rememberChoice) optOut.set(true);
+  setEndpoint(null);
   const subscription = await getPushSubscription();
   if (!subscription) return;
   await notificationApi.unsubscribe(subscription.endpoint).catch(() => {});

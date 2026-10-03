@@ -22,8 +22,9 @@ export async function registerPresenceHandlers(socket, on) {
   const userId = String(session.user._id);
   const peerId = String(session.peerId);
 
-  on('presence:visibility', async ({ visible }) => {
+  on('presence:visibility', async ({ visible, endpoint }) => {
     socket.data.visible = visible;
+    if (endpoint !== undefined) socket.data.pushEndpoint = endpoint;
   });
 
   // Typing is throttled client-side; the server only relays to the peer.

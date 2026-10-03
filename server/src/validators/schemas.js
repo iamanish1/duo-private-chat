@@ -91,7 +91,8 @@ export const socketSchemas = {
   'message:read': z.object({ upTo: objectId }),
   'message:react': z.object({ id: objectId, emoji: emoji.nullable() }),
   'message:delete': z.object({ id: objectId }),
-  'presence:visibility': z.object({ visible: z.boolean() }),
+  // endpoint: this device's Web Push endpoint, so pushes can skip the device on screen.
+  'presence:visibility': z.object({ visible: z.boolean(), endpoint: z.url({ protocol: /^https$/ }).max(1000).nullable().optional() }),
   'call:accept': z.object({ callId: objectId }),
   'call:reject': z.object({ callId: objectId }),
   'call:end': z.object({ callId: objectId }),

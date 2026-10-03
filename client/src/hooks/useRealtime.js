@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { getSocket } from '../services/socket';
 import { acknowledgeDelivered, flushOutbox, markSeen, syncNewer } from '../services/chatActions';
-import { getPushSubscription, showLocalNotification } from '../services/push';
+import { ensurePushSubscription, getPushEndpoint, onPushEndpointChange, showLocalNotification } from '../services/push';
 import { useChatStore } from '../store/chatStore';
 import { APP_NAME } from '../config';
 import { playMessageChime } from '../utils/sounds';
@@ -18,14 +18,13 @@ export function useRealtime({ onSessionEnded }) {
     const socket = getSocket();
     let typingTimer;
     let hiddenUnread = 0;
-    let pushActive = false;
-    getPushSubscription().then((sub) => {
-      pushActive = Boolean(sub);
-    });
+    let pushEndpoint = getPushEndpoint();
+    let pushChecked = false;
 
     const reportVisibility = () => {
       const visible = document.visibilityState === 'visible';
-      if (socket.connected) socket.emit('presence:visibility', { visible });
+      // The endpoint tells the server which push registration is this device.
+      if (socket.connected) socket.emit('presence:visibility', { visible, endpoint: pushEndpoint });
       if (visible) {
         hiddenUnread = 0;
         document.title = APP_NAME;
@@ -38,7 +37,7 @@ export function useRealtime({ onSessionEnded }) {
       hiddenUnread += 1;
       document.title = `(${hiddenUnread}) ${APP_NAME}`;
       // With Web Push active the server notifies this device instead.
-      if (pushActive) return;
+      if (pushEndpoint) return;
       // Works even where notifications can't (e.g. incognito windows).
       playMessageChime();
       const { peer } = store();
@@ -54,6 +53,11 @@ export function useRealtime({ onSessionEnded }) {
       connect: () => {
         store().setConnection('connected');
         reportVisibility();
+        if (!pushChecked) {
+          pushChecked = true;
+          // Repair/refresh this device's push registration (never prompts).
+          ensurePushSubscription();
+        }
         syncNewer();
         flushOutbox();
       },
@@ -106,7 +110,16 @@ export function useRealtime({ onSessionEnded }) {
     const onOffline = () => store().setConnection('offline');
 
     Object.entries(handlers).forEach(([event, fn]) => socket.on(event, fn));
+    const stopEndpointWatch = onPushEndpointChange((endpoint) => {
+      pushEndpoint = endpoint;
+      reportVisibility();
+    });
+    // Mobile browsers may freeze a backgrounded page before visibilitychange
+    // reaches the server; say "hidden" on these too so pushes aren't skipped.
+    const reportHidden = () => socket.connected && socket.emit('presence:visibility', { visible: false, endpoint: pushEndpoint });
     document.addEventListener('visibilitychange', reportVisibility);
+    window.addEventListener('pagehide', reportHidden);
+    document.addEventListener('freeze', reportHidden);
     window.addEventListener('online', onOnline);
     window.addEventListener('offline', onOffline);
     socket.connect();
@@ -115,6 +128,9 @@ export function useRealtime({ onSessionEnded }) {
       clearTimeout(typingTimer);
       Object.entries(handlers).forEach(([event, fn]) => socket.off(event, fn));
       document.removeEventListener('visibilitychange', reportVisibility);
+      window.removeEventListener('pagehide', reportHidden);
+      document.removeEventListener('freeze', reportHidden);
+      stopEndpointWatch();
       window.removeEventListener('online', onOnline);
       window.removeEventListener('offline', onOffline);
       socket.disconnect();

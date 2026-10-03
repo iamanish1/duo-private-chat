@@ -29,9 +29,12 @@ export async function isUserOnline(userId) {
   return (await socketsOfUser(userId)).length > 0;
 }
 
-/** True when at least one of the user's tabs is visible (chat on screen). */
-export async function isUserViewing(userId) {
-  return (await socketsOfUser(userId)).some((socket) => socket.data.visible);
+/**
+ * Push endpoints of the user's devices that currently have the app on screen.
+ * Those devices see the event live; every other device gets a push.
+ */
+export async function onScreenPushEndpoints(userId) {
+  return (await socketsOfUser(userId)).filter((s) => s.data.visible && s.data.pushEndpoint).map((s) => s.data.pushEndpoint);
 }
 
 export function disconnectUser(userId) {

@@ -3,7 +3,7 @@ import { Call, User } from '../models/index.js';
 import { conflict, forbidden, notFound } from '../utils/AppError.js';
 import { sameId, toObjectId } from '../utils/ids.js';
 import { logger } from '../utils/logger.js';
-import { emitToConversation, emitToSocket, emitToUser, isUserViewing } from '../sockets/realtime.js';
+import { emitToConversation, emitToSocket, emitToUser, onScreenPushEndpoints } from '../sockets/realtime.js';
 import { publicUser, serializeCall } from './serializers.js';
 import { buildCallNotification, sendToUser } from './pushService.js';
 
@@ -74,12 +74,11 @@ export async function initiateCall(session, socketId) {
   emitToUser(peerId, 'call:incoming', { call: dto, caller: publicUser(user) });
   ringTimers.set(id, setTimeout(() => finish(id, { status: 'missed', reason: 'no-answer' }), config.calls.ringTimeoutMs));
 
-  isUserViewing(peerId)
-    .then(async (viewing) => {
-      if (viewing) return;
+  onScreenPushEndpoints(peerId)
+    .then(async (skipEndpoints) => {
       const receiver = await User.findById(peerId).select('settings').lean();
       const payload = buildCallNotification({ caller: user, callId: id, preview: receiver?.settings?.notificationPreview });
-      await sendToUser(peerId, payload, { urgency: 'high', ttl: Math.ceil(config.calls.ringTimeoutMs / 1000) });
+      await sendToUser(peerId, payload, { urgency: 'high', ttl: Math.ceil(config.calls.ringTimeoutMs / 1000), skipEndpoints });
     })
     .catch(() => logger.warn('Incoming-call push failed'));
 
