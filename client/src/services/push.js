@@ -79,6 +79,8 @@ const setEndpoint = (endpoint) => {
   endpointListeners.forEach((fn) => fn(endpoint));
 };
 export const getPushEndpoint = () => currentEndpoint;
+/** True after the person switched notifications off on this device. */
+export const isNotificationsOptedOut = () => optOut.get();
 export function onPushEndpointChange(fn) {
   endpointListeners.add(fn);
   return () => endpointListeners.delete(fn);
@@ -179,7 +181,7 @@ export async function disableNotifications({ optOut: rememberChoice = true } = {
 
 /** In-tab fallback when push is unavailable: show via the SW (works on Android). */
 export async function showLocalNotification(title, options) {
-  if (!notificationsSupported() || Notification.permission !== 'granted') return;
+  if (!notificationsSupported() || Notification.permission !== 'granted' || optOut.get()) return;
   try {
     const registration = 'serviceWorker' in navigator ? await readyRegistration() : null;
     if (registration) await registration.showNotification(title, { icon: '/icons/icon-192.png', badge: '/icons/badge-96.png', ...options });

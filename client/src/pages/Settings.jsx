@@ -63,6 +63,7 @@ const NOTIFICATION_STATES = {
   enabled: 'On for this device',
   'local-only': 'On while the app is open in the background',
   default: 'Off',
+  off: 'Off for this device',
   denied: 'Blocked in your browser settings',
   private: 'Not available in private/incognito windows. Open the app in a normal window.',
   unsupported: "Not supported in this browser",
@@ -144,7 +145,7 @@ export default function Settings() {
   };
 
   const notificationsOn = notifications.state === 'enabled' || notifications.state === 'local-only';
-  const canToggle = ['enabled', 'local-only', 'default'].includes(notifications.state);
+  const canToggle = ['enabled', 'local-only', 'default', 'off'].includes(notifications.state);
 
   return (
     <PageLayout title="Settings">

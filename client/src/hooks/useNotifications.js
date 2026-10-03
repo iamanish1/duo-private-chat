@@ -4,6 +4,7 @@ import {
   enableNotifications,
   getPushSubscription,
   isIOS,
+  isNotificationsOptedOut,
   isStandalone,
   looksLikePrivateWindow,
   notificationsSupported,
@@ -14,7 +15,8 @@ const DISMISS_KEY = 'duo-notify-prompt-dismissed';
 
 /**
  * Notification permission + push subscription state for this device.
- * `state`: unsupported | needs-install | default | denied | private | enabled | local-only
+ * `state`: unsupported | needs-install | default | denied | private | off | enabled | local-only
+ * (`off`: permission is granted but the person switched notifications off here)
  */
 export function useNotifications() {
   const [state, setState] = useState('default');
@@ -28,6 +30,8 @@ export function useNotifications() {
     }
     if (Notification.permission === 'denied') return setState(looksLikePrivateWindow() ? 'private' : 'denied');
     if (Notification.permission === 'default') return setState('default');
+    // The browser permission outlives a deliberate "off" — honor the choice.
+    if (isNotificationsOptedOut()) return setState('off');
     const subscription = pushSupported() ? await getPushSubscription() : null;
     setState(subscription ? 'enabled' : 'local-only');
   }, []);
