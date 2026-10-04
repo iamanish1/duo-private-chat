@@ -5,6 +5,7 @@ import { ChatHeader } from '../components/chat/ChatHeader';
 import { ChatSidebar } from '../components/chat/ChatSidebar';
 import { ChatMenuSheet } from '../components/chat/ChatMenuSheet';
 import { ConnectionBanner } from '../components/chat/ConnectionBanner';
+import { NowPlayingBar } from '../components/music/NowPlayingBar';
 import { MessageList } from '../components/chat/MessageList';
 import { MessageSkeleton } from '../components/chat/MessageSkeleton';
 import { MessageActionsSheet } from '../components/chat/MessageActionsSheet';
@@ -65,8 +66,9 @@ export default function Chat() {
       <ChatSidebar onCall={onCall} onOpenMedia={onOpenMedia} callDisabled={callDisabled} />
 
       <section className="flex min-w-0 flex-1 flex-col">
-        <ChatHeader onCall={onCall} onMenu={() => setMenuOpen(true)} onProfile={() => setMenuOpen(true)} callDisabled={callDisabled} />
+        <ChatHeader onCall={onCall} onMenu={() => setMenuOpen(true)} onProfile={() => setMenuOpen(true)} onWatch={() => navigate('/watch')} callDisabled={callDisabled} />
         <ConnectionBanner />
+        <NowPlayingBar />
         {status === 'ready' && <DuoCodeReminder />}
         {status === 'ready' && <NotificationPrompt peerName={peer?.name} visible={promptVisible} />}
 

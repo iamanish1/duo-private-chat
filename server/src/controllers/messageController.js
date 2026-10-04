@@ -27,6 +27,12 @@ export async function remove(req, res) {
   res.json({ message: serializeMessage(message) });
 }
 
+export async function edit(req, res) {
+  const message = await messages.editMessage(req.session, req.valid.params.id, req.valid.body.text);
+  publishUpdated(req.session, message);
+  res.json({ message: serializeMessage(message) });
+}
+
 export async function react(req, res) {
   const message = await messages.setReaction(req.session, req.valid.params.id, req.valid.body.emoji);
   publishUpdated(req.session, message);

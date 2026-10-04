@@ -8,6 +8,8 @@ import { createSocketServer } from '../src/sockets/index.js';
 import { seedAuthorizedUsers } from '../scripts/seedLib.js';
 import { clearConversationCache } from '../src/services/conversationService.js';
 import { resetCallState } from '../src/services/callService.js';
+import { resetWatchState } from '../src/services/watchService.js';
+import { resetListenState } from '../src/services/listenService.js';
 
 export const USERS = {
   alex: { email: 'alex@example.com', name: 'Alex', password: 'alex-password-123' },
@@ -33,6 +35,8 @@ export async function startTestServer() {
     url,
     async close() {
       resetCallState();
+      resetWatchState();
+      resetListenState();
       io.close();
       await new Promise((resolve) => server.close(resolve));
       await mongoose.disconnect();

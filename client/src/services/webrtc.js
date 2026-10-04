@@ -31,10 +31,12 @@ const isPhone = () => window.matchMedia('(pointer: coarse)').matches && Math.min
 
 // Phones: don't force a 16:9 landscape frame — some (notably iOS) crop or
 // squeeze a portrait camera into it. Let them send their natural orientation.
-const videoConstraints = (facingMode) =>
-  isPhone()
-    ? { facingMode, frameRate: { ideal: 30, max: 30 } }
-    : { facingMode, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30, max: 30 } };
+const videoConstraints = (facingMode) => {
+  const base = isPhone()
+    ? { frameRate: { ideal: 30, max: 30 } }
+    : { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30, max: 30 } };
+  return facingMode ? { ...base, facingMode } : base;
+};
 
 const AUDIO_CONSTRAINTS = {
   echoCancellation: true,
@@ -84,12 +86,39 @@ export function tuneOpus(sdp) {
   return sdp.replace(match[0], `${match[0]}\r\na=fmtp:${pt} ${merged}`);
 }
 
+const BACK_LABEL = /back|rear|environment|world/i;
+const FRONT_LABEL = /front|user|face/i;
+
+/**
+ * Opens one camera facing `facingMode`. Asks strictly first (a loose request
+ * can hand back the same front camera); if the browser can't honour that, or
+ * returns the camera we're leaving, picks another device by its label.
+ */
+async function openCamera(facingMode, avoidDeviceId) {
+  const base = videoConstraints(undefined);
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { ...base, facingMode: { exact: facingMode } }, audio: false });
+    const [track] = stream.getVideoTracks();
+    if (!avoidDeviceId || track.getSettings?.().deviceId !== avoidDeviceId) return track;
+    track.stop();
+  } catch {
+    // Fall back to choosing a device below.
+  }
+  const cameras = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'videoinput' && d.deviceId !== avoidDeviceId);
+  const wanted = facingMode === 'environment' ? BACK_LABEL : FRONT_LABEL;
+  const pick = cameras.find((c) => wanted.test(c.label)) ?? cameras[0];
+  if (!pick) throw new Error('No other camera found.');
+  const stream = await navigator.mediaDevices.getUserMedia({ video: { ...base, deviceId: { exact: pick.deviceId } }, audio: false });
+  return stream.getVideoTracks()[0];
+}
+
 export async function hasMultipleCameras() {
   try {
     const devices = await navigator.mediaDevices.enumerateDevices();
-    return devices.filter((d) => d.kind === 'videoinput').length > 1;
+    // Phones nearly always have front + back cameras, even if the list is incomplete.
+    return devices.filter((d) => d.kind === 'videoinput').length > 1 || isPhone();
   } catch {
-    return false;
+    return isPhone();
   }
 }
 
@@ -202,19 +231,31 @@ export class PeerSession {
   /** Swaps front/back camera without renegotiation (replaceTrack). */
   async switchCamera() {
     const next = this.facingMode === 'user' ? 'environment' : 'user';
-    const stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints(next), audio: false });
-    const [newTrack] = stream.getVideoTracks();
     const [oldTrack] = this.localStream.getVideoTracks();
-    newTrack.enabled = oldTrack ? oldTrack.enabled : true;
+    const enabled = oldTrack ? oldTrack.enabled : true;
+    const oldDeviceId = oldTrack?.getSettings?.().deviceId;
+    // Most Android phones can open only one camera at a time, so release the
+    // current one before asking for the other.
+    oldTrack?.stop();
+
+    let newTrack;
+    let facingMode = next;
+    try {
+      newTrack = await openCamera(next, oldDeviceId);
+    } catch (err) {
+      // Bring the previous camera back so the call keeps its video.
+      newTrack = await openCamera(this.facingMode).catch(() => null);
+      facingMode = this.facingMode;
+      if (!newTrack) throw err;
+    }
+    newTrack.enabled = enabled;
 
     const sender = this.pc.getSenders().find((s) => s.track?.kind === 'video');
     await sender?.replaceTrack(newTrack);
-    if (oldTrack) {
-      this.localStream.removeTrack(oldTrack);
-      oldTrack.stop();
-    }
+    if (oldTrack) this.localStream.removeTrack(oldTrack);
     this.localStream.addTrack(newTrack);
-    this.facingMode = next;
+    this.facingMode = newTrack.getSettings?.().facingMode || facingMode;
+    if (facingMode !== next) throw new Error('Could not open the other camera.');
     return this.facingMode;
   }
 

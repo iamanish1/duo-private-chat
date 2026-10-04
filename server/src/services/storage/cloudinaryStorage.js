@@ -23,11 +23,11 @@ export function createCloudinaryStorage({ cloudName, apiKey, apiSecret, folder }
   return {
     name: 'cloudinary',
 
-    async upload({ filePath, resourceType, mimeType }) {
+    async upload({ filePath, resourceType, mimeType, subfolder }) {
       const options = {
         resource_type: cloudType(resourceType),
         type: 'authenticated',
-        folder: resourceType === 'audio' ? `${folder}/voice` : `${folder}/${resourceType}s`,
+        folder: subfolder ? `${folder}/${subfolder}` : resourceType === 'audio' ? `${folder}/voice` : `${folder}/${resourceType}s`,
         unique_filename: true,
         use_filename: false,
         overwrite: false,
@@ -55,9 +55,10 @@ export function createCloudinaryStorage({ cloudName, apiKey, apiSecret, folder }
       };
     },
 
-    url(key, { resourceType = 'image', variant = 'full', mimeType } = {}) {
+    url(key, { resourceType = 'image', variant = 'full', mimeType, format } = {}) {
       // MP3 plays everywhere, including Safari for Chrome-recorded WebM/Opus.
-      if (resourceType === 'audio') return cloudinary.url(key, { ...baseOptions('video'), format: 'mp3' });
+      // Songs pass their own format: served as uploaded, no transcoding.
+      if (resourceType === 'audio') return cloudinary.url(key, { ...baseOptions('video'), format: format || 'mp3' });
       if (resourceType === 'video') {
         const transcode = mimeType && !NATIVE_VIDEO.has(mimeType);
         return cloudinary.url(key, {

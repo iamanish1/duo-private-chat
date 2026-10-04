@@ -18,6 +18,9 @@ const Media = lazy(() => import('./pages/Media'));
 const Search = lazy(() => import('./pages/Search'));
 const Calls = lazy(() => import('./pages/Calls'));
 const Settings = lazy(() => import('./pages/Settings'));
+const Status = lazy(() => import('./pages/Status'));
+const Watch = lazy(() => import('./pages/Watch'));
+const Music = lazy(() => import('./pages/Music'));
 
 function Splash() {
   return (
@@ -66,6 +69,9 @@ function AppRoutes() {
         <Route path="search" element={<Search />} />
         <Route path="calls" element={<Calls />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="status" element={<Status />} />
+        <Route path="watch" element={<Watch />} />
+        <Route path="music" element={<Music />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

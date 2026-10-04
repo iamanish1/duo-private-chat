@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { formatDuration } from '../../utils/format';
+import { useChatStore } from '../../store/chatStore';
 
 /** Seconds since `since` (a timestamp), ticking every second while set. */
 export function useElapsed(since) {
@@ -92,4 +93,18 @@ export function useAudioRoute(audioRef, active) {
     speakerOn: route === 'speaker',
     toggle: () => setRoute((r) => (r === 'speaker' ? 'earpiece' : 'speaker')),
   };
+}
+
+/** Messages from the other person since the call screen was last open full size. */
+export function useUnreadDuringCall({ chatSeenAt, call }) {
+  const since = chatSeenAt ?? (call?.createdAt ? new Date(call.createdAt).getTime() : Infinity);
+  return useChatStore((s) => {
+    let count = 0;
+    for (let i = s.messages.length - 1; i >= 0; i -= 1) {
+      const m = s.messages[i];
+      if (new Date(m.createdAt).getTime() <= since) break;
+      if (m.senderId !== s.me?.id && !m.deleted) count += 1;
+    }
+    return count;
+  });
 }

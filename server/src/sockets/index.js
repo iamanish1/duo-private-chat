@@ -10,6 +10,8 @@ import { createEventRegistrar } from './eventRegistrar.js';
 import { registerPresenceHandlers } from './presenceHandlers.js';
 import { registerMessageHandlers } from './messageHandlers.js';
 import { registerCallHandlers } from './callHandlers.js';
+import { registerWatchHandlers } from './watchHandlers.js';
+import { registerListenHandlers } from './listenHandlers.js';
 
 export function createSocketServer(httpServer) {
   const io = new Server(httpServer, {
@@ -45,6 +47,8 @@ export function createSocketServer(httpServer) {
     const on = createEventRegistrar(socket);
     registerMessageHandlers(socket, on);
     registerCallHandlers(socket, on);
+    registerWatchHandlers(socket, on);
+    registerListenHandlers(socket, on);
     registerPresenceHandlers(socket, on).catch((err) => logger.error('Presence setup failed', { message: err.message }));
   });
 

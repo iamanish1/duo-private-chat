@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react';
-import { Camera, Images, Trash2 } from 'lucide-react';
+import { Camera, Eye, Images, Trash2 } from 'lucide-react';
 import { Avatar } from '../common/Avatar';
 import { BottomSheet, SheetAction } from '../common/BottomSheet';
 import { Spinner } from '../common/Spinner';
 import { AvatarEditor } from './AvatarEditor';
+import { openProfilePhoto } from '../common/ProfilePhotoViewer';
 import { userApi } from '../../services/api';
 import { toast } from '../../store/toastStore';
 import { compressImage, validateMediaFile } from '../../utils/media';
@@ -96,6 +97,16 @@ export function ProfilePhoto({ user, onUpdated }) {
       />
 
       <BottomSheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Profile photo">
+        {user?.avatarUrl && (
+          <SheetAction
+            icon={Eye}
+            label="View photo"
+            onClick={() => {
+              setSheetOpen(false);
+              openProfilePhoto(user);
+            }}
+          />
+        )}
         <SheetAction icon={Camera} label="Take a photo" onClick={() => pick('camera')} />
         <SheetAction icon={Images} label="Choose from library" onClick={() => pick('library')} />
         {user?.avatarUrl && <SheetAction icon={Trash2} label="Remove photo" tone="danger" onClick={remove} />}

@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
-import { History, Images, Phone, Search, Settings, ShieldCheck, UserRound, Video } from 'lucide-react';
+import { CircleDashed, Headphones, History, Images, Phone, Popcorn, Search, Settings, ShieldCheck, UserRound, Video } from 'lucide-react';
 import { Link } from 'react-router';
-import { Avatar } from '../common/Avatar';
 import { PresenceLine } from './ChatHeader';
+import { PeerAvatar } from './PeerAvatar';
 import { useChatStore } from '../../store/chatStore';
 import { useNow } from '../../hooks/useNow';
 import { chatApi } from '../../services/api';
 import { resolveUrl } from '../../utils/url';
 
 const LINKS = [
+  { to: '/watch', icon: Popcorn, label: 'Watch together' },
+  { to: '/music', icon: Headphones, label: 'Listen together' },
+  { to: '/status', icon: CircleDashed, label: 'Status' },
   { to: '/media', icon: Images, label: 'Photos & videos' },
   { to: '/search', icon: Search, label: 'Search messages' },
   { to: '/calls', icon: History, label: 'Call history' },
@@ -36,7 +39,7 @@ export function ChatSidebar({ onCall, onOpenMedia, callDisabled }) {
     <aside className="hidden w-80 shrink-0 flex-col border-r border-line bg-surface lg:flex xl:w-96">
       <div className="scroll-area flex-1 px-5 pt-safe">
         <div className="flex flex-col items-center pt-10 pb-6 text-center">
-          <Avatar user={peer} size="xl" online={peer?.isOnline} />
+          <PeerAvatar size="xl" />
           <h2 className="mt-4 text-xl font-semibold">{peer?.name}</h2>
           <p className="mt-1 text-sm text-muted">
             <PresenceLine peer={peer} typing={typing} now={now} />

@@ -93,10 +93,20 @@ export async function syncNewer() {
 }
 
 // ---- Sending text ------------------------------------------------------------
-export function sendText(text) {
-  const message = optimistic({ type: 'text', text: text.trim() });
+/** `status`: the other person's status this message replies to. */
+export function sendText(text, { status } = {}) {
+  const message = optimistic({
+    type: 'text',
+    text: text.trim(),
+    ...(status && {
+      replyTo: null,
+      replyToId: null,
+      statusId: status.id,
+      statusReply: { statusId: status.id, ownerId: status.userId, type: status.type, text: status.text.slice(0, 160), background: status.background, thumbnailUrl: status.media?.thumbnailUrl ?? null, expired: false },
+    }),
+  });
   store().upsert(message);
-  store().setReplyTo(null);
+  if (!status) store().setReplyTo(null);
   deliverText(message);
 }
 
@@ -108,6 +118,7 @@ async function deliverText(message) {
       text: message.text,
       clientId: message.clientId,
       ...(message.replyToId && { replyTo: message.replyToId }),
+      ...(message.statusId && { statusId: message.statusId }),
     });
     store().upsert(saved);
   } catch (err) {
@@ -220,6 +231,20 @@ export function discardPending(clientId) {
 }
 
 // ---- Message actions ----------------------------------------------------------
+/** Save a correction: shown immediately, rolled back if the server refuses. */
+export async function editMessage(message, text) {
+  const value = text.trim();
+  if (value === message.text) return;
+  store().upsert({ ...message, text: value, editedAt: new Date().toISOString() });
+  try {
+    const { message: updated } = await chatApi.edit(message.id, value);
+    store().upsert(updated);
+  } catch (err) {
+    store().upsert(message);
+    toast.error(err.message);
+  }
+}
+
 export async function deleteMessage(message) {
   try {
     const { message: updated } = await chatApi.remove(message.id);

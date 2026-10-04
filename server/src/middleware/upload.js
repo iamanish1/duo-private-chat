@@ -11,13 +11,14 @@ const storage = multer.diskStorage({
   filename: (req, file, cb) => cb(null, `duo-${crypto.randomBytes(12).toString('hex')}`),
 });
 
-function createUploader(maxBytes, fields) {
+function createUploader(maxBytes, fields, { allowUnknownType = false } = {}) {
   const upload = multer({
     storage,
     limits: { fileSize: maxBytes, files: fields.length, fields: 10, fieldSize: 8 * 1024 },
     fileFilter: (req, file, cb) => {
       // Cheap early rejection; the authoritative check is on file contents.
-      if (/^(image|video|audio)\//.test(file.mimetype)) cb(null, true);
+      // Some phones label .flac/.m4a as octet-stream, so songs are judged by content alone.
+      if (/^(image|video|audio)\//.test(file.mimetype) || (allowUnknownType && /^(application\/octet-stream|)$/.test(file.mimetype))) cb(null, true);
       else cb(badRequest('Only photos, videos and voice notes can be sent.', 'INVALID_FILE_TYPE'));
     },
   }).fields(fields.map((name) => ({ name, maxCount: 1 })));
@@ -33,5 +34,6 @@ function createUploader(maxBytes, fields) {
 
 export const messageUpload = createUploader(Math.max(config.media.maxImageBytes, config.media.maxVideoBytes), ['file', 'thumbnail']);
 export const avatarUpload = createUploader(config.media.maxImageBytes, ['file']);
+export const songUpload = createUploader(config.media.maxSongBytes, ['file'], { allowUnknownType: true });
 
 export const uploadedFile = (req, name) => req.files?.[name]?.[0];

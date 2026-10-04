@@ -1,13 +1,16 @@
-import { ChevronRight, History, Images, Moon, Search, Settings, Sun } from 'lucide-react';
+import { ChevronRight, CircleDashed, Headphones, History, Images, Moon, Popcorn, Search, Settings, Sun } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { BottomSheet, SheetAction } from '../common/BottomSheet';
 import { Avatar } from '../common/Avatar';
 import { useTheme } from '../../context/ThemeContext';
 import { useChatStore } from '../../store/chatStore';
+import { useStatusesOf } from '../status/useStatuses';
 
 export function ChatMenuSheet({ open, onClose }) {
   const navigate = useNavigate();
   const me = useChatStore((s) => s.me);
+  const peer = useChatStore((s) => s.peer);
+  const unseen = useStatusesOf(peer?.id).filter((s) => !s.viewedAt).length;
   const { resolved, setPreference } = useTheme();
   const go = (path) => () => {
     onClose();
@@ -24,6 +27,9 @@ export function ChatMenuSheet({ open, onClose }) {
         </span>
         <ChevronRight size={20} className="text-muted" />
       </button>
+      <SheetAction icon={CircleDashed} label="Status" description={unseen ? `${unseen} new from ${peer?.name}` : 'Share an update for 24 hours'} onClick={go('/status')} />
+      <SheetAction icon={Popcorn} label="Watch together" description="YouTube, in sync, while you talk" onClick={go('/watch')} />
+      <SheetAction icon={Headphones} label="Listen together" description="Your songs and playlists, in sync" onClick={go('/music')} />
       <SheetAction icon={Images} label="Photos & videos" onClick={go('/media')} />
       <SheetAction icon={Search} label="Search messages" onClick={go('/search')} />
       <SheetAction icon={History} label="Call history" onClick={go('/calls')} />

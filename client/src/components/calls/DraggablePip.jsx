@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react';
 
 const MARGIN = 12;
+const TAP_SLOP = 8; // px of movement still treated as a tap
 
 /** Picture-in-picture window that can be dragged and snaps to the nearest corner. */
-export function DraggablePip({ children, className = '' }) {
+export function DraggablePip({ children, className = '', onTap }) {
   const ref = useRef(null);
   const drag = useRef(null);
   const [corner, setCorner] = useState({ x: 'right', y: 'top' });
@@ -17,8 +18,14 @@ export function DraggablePip({ children, className = '' }) {
   const onPointerMove = (e) => {
     if (drag.current) setDelta({ x: e.clientX - drag.current.x, y: e.clientY - drag.current.y });
   };
-  const onPointerUp = () => {
+  const onPointerUp = (e) => {
     if (!drag.current) return;
+    if (onTap && e.type === 'pointerup' && Math.hypot(e.clientX - drag.current.x, e.clientY - drag.current.y) < TAP_SLOP) {
+      drag.current = null;
+      setDelta(null);
+      onTap();
+      return;
+    }
     const rect = ref.current.getBoundingClientRect();
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;

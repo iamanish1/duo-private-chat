@@ -3,3 +3,7 @@ export { Conversation } from './Conversation.js';
 export { Message, MESSAGE_TYPES, MESSAGE_STATUSES } from './Message.js';
 export { Call, CALL_STATUSES } from './Call.js';
 export { PushSubscription } from './PushSubscription.js';
+export { PushLog } from './PushLog.js';
+export { Status, STATUS_TYPES } from './Status.js';
+export { Song } from './Song.js';
+export { Playlist } from './Playlist.js';

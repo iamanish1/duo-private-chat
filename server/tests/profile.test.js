@@ -22,7 +22,10 @@ describe('profile photo', () => {
     expect(res.status).toBe(200);
     expect(res.body.user.avatarUrl).toMatch(/^\/api\/media\/file\//);
     expect((await updated).avatarUrl).toBe(res.body.user.avatarUrl);
-    expect((await sam.get('/api/conversation')).body.peer.avatarUrl).toBe(res.body.user.avatarUrl);
+    const { peer } = (await sam.get('/api/conversation')).body;
+    expect(peer.avatarUrl).toBe(res.body.user.avatarUrl);
+    // A full-size copy for the photo viewer.
+    expect(peer.avatarFullUrl).toMatch(/^\/api\/media\/file\//);
     samSocket.close();
   });
 
@@ -38,6 +41,7 @@ describe('profile photo', () => {
     const res = await alex.delete('/api/users/me/avatar');
     expect(res.status).toBe(200);
     expect(res.body.user.avatarUrl).toBeNull();
+    expect(res.body.user.avatarFullUrl).toBeNull();
     await new Promise((r) => setTimeout(r, 100));
     expect(fs.existsSync(storage.resolvePath(before.avatar.key))).toBe(false);
     expect((await alex.delete('/api/users/me/avatar')).status).toBe(200);

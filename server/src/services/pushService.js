@@ -1,6 +1,6 @@
 import webpush from 'web-push';
 import { config } from '../config/env.js';
-import { PushSubscription } from '../models/index.js';
+import { PushLog, PushSubscription } from '../models/index.js';
 import { logger } from '../utils/logger.js';
 
 if (config.push.enabled) {
@@ -33,28 +33,51 @@ export async function removeSubscription(userId, endpoint) {
  * Sends an encrypted push to every subscribed device of a user. Expired
  * subscriptions (404/410) are pruned. Never throws: push is best-effort.
  */
+const deviceOf = (sub) => {
+  const ua = sub.userAgent || '';
+  if (/iPhone|iPad/.test(ua)) return 'iPhone';
+  if (/Android/.test(ua)) return 'Android';
+  if (/Windows/.test(ua)) return 'Windows';
+  if (/Mac OS/.test(ua)) return 'Mac';
+  return 'Other';
+};
+
+/** Troubleshooting trail (no content); a logging failure never affects delivery. */
+function logPush(entries) {
+  if (entries.length) PushLog.insertMany(entries).catch(() => {});
+}
+
 export async function sendToUser(userId, payload, { ttl = 60 * 60, urgency = 'normal', topic, skipEndpoints = [] } = {}) {
   if (!isPushEnabled()) return { sent: 0 };
   const skip = new Set(skipEndpoints);
-  const subscriptions = (await PushSubscription.find({ userId }).lean()).filter((sub) => !skip.has(sub.endpoint));
+  const all = await PushSubscription.find({ userId }).lean();
+  const subscriptions = all.filter((sub) => !skip.has(sub.endpoint));
+  const kind = payload.type;
+  const log = all
+    .filter((sub) => skip.has(sub.endpoint))
+    .map((sub) => ({ userId, device: deviceOf(sub), kind, result: 'skipped-on-screen' }));
   const body = JSON.stringify(payload);
   let sent = 0;
 
   await Promise.all(
     subscriptions.map(async (sub) => {
       try {
-        await (sendOverride ?? webpush.sendNotification)({ endpoint: sub.endpoint, keys: sub.keys }, body, { TTL: ttl, urgency, topic });
+        const res = await (sendOverride ?? webpush.sendNotification)({ endpoint: sub.endpoint, keys: sub.keys }, body, { TTL: ttl, urgency, topic });
         sent += 1;
+        log.push({ userId, device: deviceOf(sub), kind, result: 'sent', statusCode: res?.statusCode });
         await PushSubscription.updateOne({ _id: sub._id }, { $set: { lastUsedAt: new Date() } });
       } catch (err) {
         if (err.statusCode === 404 || err.statusCode === 410) {
+          log.push({ userId, device: deviceOf(sub), kind, result: 'expired', statusCode: err.statusCode });
           await PushSubscription.deleteOne({ _id: sub._id });
         } else {
+          log.push({ userId, device: deviceOf(sub), kind, result: 'failed', statusCode: err.statusCode });
           logger.warn('Push delivery failed', { status: err.statusCode });
         }
       }
     }),
   );
+  logPush(log);
   return { sent };
 }
 

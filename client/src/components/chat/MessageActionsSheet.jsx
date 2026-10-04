@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Copy, Plus, Reply, RotateCcw, Trash2 } from 'lucide-react';
+import { Copy, Pencil, Plus, Reply, RotateCcw, Trash2 } from 'lucide-react';
 import { BottomSheet, SheetAction } from '../common/BottomSheet';
 import { EmojiPicker } from './EmojiPicker';
-import { QUICK_REACTIONS } from '../../config';
+import { QUICK_REACTIONS, canEditMessage } from '../../config';
 import { deleteMessage, discardPending, reactToMessage, retryMessage } from '../../services/chatActions';
 import { useChatStore } from '../../store/chatStore';
 import { toast } from '../../store/toastStore';
@@ -13,6 +13,7 @@ const stamp = (value) => `${formatDayLabel(value)}, ${formatTime(value)}`;
 export function MessageActionsSheet({ message, onClose }) {
   const me = useChatStore((s) => s.me);
   const setReplyTo = useChatStore((s) => s.setReplyTo);
+  const setEditing = useChatStore((s) => s.setEditing);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [moreEmoji, setMoreEmoji] = useState(false);
 
@@ -85,6 +86,9 @@ export function MessageActionsSheet({ message, onClose }) {
             </>
           )}
           {confirmed && !message.deleted && <SheetAction icon={Reply} label="Reply" onClick={run(() => setReplyTo(message))} />}
+          {canEditMessage(message, me?.id) && (
+            <SheetAction icon={Pencil} label={message.type === 'text' ? 'Edit' : 'Edit caption'} onClick={run(() => setEditing(message))} />
+          )}
           {message.text && !message.deleted && <SheetAction icon={Copy} label="Copy text" onClick={run(copy)} />}
           {mine && confirmed && !message.deleted && <SheetAction icon={Trash2} label="Delete for both" tone="danger" onClick={() => setConfirmDelete(true)} />}
 

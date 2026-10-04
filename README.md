@@ -39,6 +39,7 @@ It is built mobile-first. It installs as a PWA and is meant to feel like a nativ
 - Message states: sending (clock) → sent (✓) → delivered (✓✓) → read (highlighted ✓✓).
 - Typing indicator (throttled, self-healing), online/offline presence and "last seen".
 - Replies (swipe a bubble right, or use long-press → Reply), emoji reactions, copy, and delete for both people.
+- Edit your own sent messages (or a photo/video caption) for 15 minutes via long-press → Edit; both people see the fix live with an "edited" label. Voice notes can't be edited.
 - Emoji picker with recents. Messages made only of emoji render large.
 - Cursor pagination: the latest 40 messages load first, and older ones load as you scroll up, with the scroll position preserved.
 - Search across text, photos and videos, filterable by date. Tapping a result jumps to the message.
@@ -67,6 +68,10 @@ It is built mobile-first. It installs as a PWA and is meant to feel like a nativ
 **Video calls**
 - 1:1 WebRTC, with Socket.IO for signaling and STUN/TURN supplied by the server.
 - Incoming-call screen, accept/decline, mute, camera on/off, front/back camera switch, call timer, draggable picture-in-picture, auto-hiding controls.
+- **Listen together:** a shared music library — upload your own songs (MP3, M4A, AAC, FLAC, WAV, OGG; titles, artists and cover art are read from the files) and build playlists together. Play a song or playlist and the other person gets an invite; both hear the same song at the same moment, and play / pause / seek / next / previous / repeat stay in sync. Music keeps playing while you chat, switch apps or lock the screen, with lock-screen and headphone controls (Media Session). A player bar sits under the chat header.
+- **Watch together:** tap 🍿 in the chat header, paste a YouTube link, and the other person gets an invite (in-app and push). Play, pause, skipping and switching videos stay in sync on both screens (drift is corrected automatically), with a voice or video call alongside, chat beside the video and floating emoji reactions. Paid streaming apps (Netflix, Prime…) can't be embedded and aren't supported.
+- **Status (like WhatsApp):** share a text card, photo or video (up to 60 s) for 24 hours from the Status screen (menu → Status). A ring on the other person's avatar shows new updates; tap it to watch (tap to skip, hold to pause, swipe down to close). Your own updates show **Seen by …** with the time, live. Reply from the viewer and the message lands in the chat quoting the status. Expired statuses and their files are removed automatically.
+- **Chat during a call:** tap **Chat** to shrink the call (video or voice) into a small floating window and keep texting; new messages show as a badge on the Chat button. Drag the window to any corner, tap it to return full screen, or end the call from it.
 - ICE restart when the connection fails, and a 20-second grace period for socket reconnects. Unanswered calls are marked missed after 45 seconds.
 - Ringing is dismissed on your other devices once you answer on one. Call history is recorded.
 
@@ -142,8 +147,20 @@ Everything is plain JavaScript. There is no TypeScript.
 | GET | `/api/messages/search?q=&type=&from=&to=&before=` | Search |
 | GET | `/api/messages/media?type=&before=` | Gallery |
 | PATCH | `/api/messages/:id/read` | Mark everything up to `:id` as read |
+| PATCH | `/api/messages/:id` | `{ text }` edits your own message within 15 minutes of sending |
 | PUT | `/api/messages/:id/reaction` | `{ emoji }` sets your reaction; `null` removes it |
 | DELETE | `/api/messages/:id` | Delete your own message for both people |
+| GET | `/api/music` | The shared song library and playlists |
+| POST | `/api/music/songs` | Multipart `file`: upload a song (tags + cover read from the file) |
+| PATCH / DELETE | `/api/music/songs/:id` | `{ title, artist }` edit / delete a song (also removed from playlists) |
+| POST | `/api/music/playlists` | `{ name }` create a playlist |
+| PATCH / DELETE | `/api/music/playlists/:id` | `{ name }` rename or `{ songIds }` reorder / delete |
+| POST / DELETE | `/api/music/playlists/:id/songs[/:songId]` | Add / remove a song |
+| GET | `/api/statuses` | Both people's statuses from the last 24 hours |
+| POST | `/api/statuses` | `{ text, background }` posts a text status |
+| POST | `/api/statuses/media` | Multipart: `file`, optional `thumbnail`, `text`, `width`, `height`, `duration` |
+| POST | `/api/statuses/:id/view` | Mark the other person's status as seen (first view only) |
+| DELETE | `/api/statuses/:id` | Delete your own status |
 | POST | `/api/media/upload` | Multipart: `file`, optional `thumbnail`, `text`, `clientId`, `replyTo`, `width`, `height`, `duration` |
 | GET | `/api/media/file/:key` | Authenticated delivery (local driver only) |
 | PATCH | `/api/users/me` | Name and notification-preview setting |
@@ -161,7 +178,9 @@ Call setup and teardown happen over Socket.IO because they are realtime and boun
 
 | Client → server | Server → client |
 | --- | --- |
-| `message:send` (ack), `message:delivered`, `message:read`, `message:react`, `message:delete` | `message:new`, `message:status`, `message:updated` |
+| `message:send` (ack), `message:delivered`, `message:read`, `message:react`, `message:delete` | `message:new`, `message:status`, `message:updated`, `status:new`, `status:viewed`, `status:deleted` |
+| `listen:get`, `listen:start`, `listen:join`, `listen:control` (play/pause/seek/next/prev/jump/repeat), `listen:ended`, `listen:enqueue`, `listen:ring`, `listen:leave` | `listen:state`, `listen:invite`, `listen:closed`, `music:song`, `music:song-removed`, `music:playlist`, `music:playlist-removed` |
+| `watch:get`, `watch:start`, `watch:join`, `watch:control` (play/pause/seek), `watch:react`, `watch:ring`, `watch:leave` | `watch:state`, `watch:invite`, `watch:reaction`, `watch:closed` |
 | `typing:start`, `typing:stop` | `typing:start`, `typing:stop` |
 | `presence:visibility` | `user:online`, `user:offline`, `presence:state`, `user:updated` |
 | `call:initiate`, `call:accept`, `call:reject`, `call:end`, `call:rejoin` (all acked) | `call:incoming`, `call:accepted`, `call:ended`, `call:peer-reconnecting`, `call:peer-rejoined` |

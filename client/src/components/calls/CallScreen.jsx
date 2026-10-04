@@ -6,11 +6,12 @@ import { VideoTile } from './VideoTile';
 import { RemoteVideo } from './RemoteVideo';
 import { DraggablePip } from './DraggablePip';
 import { CallControls } from './CallControls';
-import { statusText, useElapsed } from './callStatus';
+import { MiniCall } from './MiniCall';
+import { statusText, useElapsed, useUnreadDuringCall } from './callStatus';
 
 /** Portrait-first call UI: remote video full-screen, local video as a draggable PiP. */
 export function CallScreen({ call }) {
-  const { phase, peer, localStream, remoteStream, micEnabled, cameraEnabled, canSwitchCamera, facingMode, connectedAt, reconnecting, endReason } = call;
+  const { phase, peer, localStream, remoteStream, micEnabled, cameraEnabled, canSwitchCamera, switchingCamera, facingMode, connectedAt, reconnecting, endReason, minimized } = call;
   const elapsed = useElapsed(phase === 'active' ? connectedAt : null);
   const [chromeVisible, setChromeVisible] = useState(true);
   const live = phase === 'active';
@@ -23,7 +24,14 @@ export function CallScreen({ call }) {
     return () => clearTimeout(timer);
   }, [live, chromeVisible]);
 
+  // A new message shows the controls, where the Chat button carries the count.
+  const unread = useUnreadDuringCall(call);
+  useEffect(() => {
+    if (unread) setChromeVisible(true);
+  }, [unread]);
+
   const status = statusText({ phase, reconnecting, endReason, elapsed });
+  if (minimized) return <MiniCall call={call} status={status} video />;
 
   return (
     <div className="fixed inset-0 z-[80] animate-fade-in overflow-hidden bg-[#0d0a09] text-white" onClick={() => setChromeVisible(true)} role="dialog" aria-label={`Video call with ${peer?.name}`}>
@@ -68,7 +76,7 @@ export function CallScreen({ call }) {
           className={`absolute inset-x-0 bottom-0 px-6 pt-10 pb-[calc(var(--safe-bottom)+28px)] transition duration-300 ${chromeVisible || !live ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-6 opacity-0'}`}
           onClick={(e) => e.stopPropagation()}
         >
-          <CallControls micEnabled={micEnabled} cameraEnabled={cameraEnabled} canSwitchCamera={canSwitchCamera} connected={phase === 'active' || phase === 'connecting'} />
+          <CallControls micEnabled={micEnabled} cameraEnabled={cameraEnabled} canSwitchCamera={canSwitchCamera} switchingCamera={switchingCamera} unread={unread} connected={phase === 'active' || phase === 'connecting'} />
         </div>
       )}
     </div>

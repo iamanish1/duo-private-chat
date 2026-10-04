@@ -14,6 +14,7 @@ const initialState = {
   connection: 'connecting', // connecting | connected | reconnecting | offline
   uploads: {}, // clientId -> { progress, error }
   replyTo: null,
+  editing: null, // own message being corrected in the composer
 };
 
 export const useChatStore = create((set) => ({
@@ -36,7 +37,9 @@ export const useChatStore = create((set) => ({
   setMe: (patch) => set((s) => ({ me: s.me ? { ...s.me, ...patch } : s.me })),
   setPeerTyping: (peerTyping) => set({ peerTyping }),
   setConnection: (connection) => set({ connection }),
-  setReplyTo: (replyTo) => set({ replyTo }),
+  // Replying and editing share the composer, so starting one ends the other.
+  setReplyTo: (replyTo) => set({ replyTo, editing: null }),
+  setEditing: (editing) => set({ editing, replyTo: null }),
 
   setUpload: (clientId, patch) => set((s) => ({ uploads: { ...s.uploads, [clientId]: { ...s.uploads[clientId], ...patch } } })),
   clearUpload: (clientId) =>

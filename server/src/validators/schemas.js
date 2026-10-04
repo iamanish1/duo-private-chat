@@ -29,9 +29,27 @@ export const sendMessageBody = z.object({
   text: z.string().max(4000, 'Messages can be up to 4000 characters'),
   clientId: clientId.optional(),
   replyTo: optionalObjectId,
+  // Replying to the other person's status.
+  statusId: optionalObjectId,
+});
+
+export const textStatusBody = z.object({
+  text: z.string().max(700, 'A status can be up to 700 characters'),
+  background: z.number().int().min(0).max(15).default(0),
+});
+
+export const statusUploadBody = z.object({
+  text: z.string().max(700, 'Captions can be up to 700 characters').optional().default(''),
+  width: optionalNumber(20000),
+  height: optionalNumber(20000),
+  duration: optionalNumber(24 * 60 * 60),
 });
 
 export const reactionBody = z.object({ emoji: emoji.nullable() });
+
+export const editMessageBody = z.object({
+  text: z.string().max(4000, 'Messages can be up to 4000 characters'),
+});
 
 export const searchQuery = z.object({
   q: z.string().trim().max(100).optional(),
@@ -128,4 +146,43 @@ export const socketSchemas = {
     }),
   }),
   'webrtc:restart': z.object({ callId: objectId }),
+  // Watch together (YouTube): video ids are 11 URL-safe characters.
+  'watch:start': z.object({ videoId: z.string().regex(/^[\w-]{11}$/, 'Invalid YouTube video') }),
+  'watch:control': z.object({ action: z.enum(['play', 'pause', 'seek']), position: z.number().min(0).max(24 * 60 * 60) }),
+  'watch:react': z.object({ emoji }),
+  // Listen together
+  'listen:start': z.object({
+    songIds: z.array(objectId).min(1).max(1000),
+    index: z.number().int().min(0).max(999).default(0),
+    playlistId: objectId.nullable().optional(),
+  }),
+  'listen:control': z
+    .object({
+      action: z.enum(['play', 'pause', 'seek', 'next', 'prev', 'jump', 'repeat']),
+      position: z.number().min(0).max(4 * 60 * 60).optional(),
+      index: z.number().int().min(0).max(999).optional(),
+      repeat: z.enum(['off', 'all', 'one']).optional(),
+    })
+    .refine((d) => d.action !== 'repeat' || d.repeat, 'Choose a repeat mode'),
+  'listen:ended': z.object({ index: z.number().int().min(0).max(999) }),
+  'listen:enqueue': z.object({ songId: objectId }),
 };
+
+export const songUpdateBody = z
+  .object({
+    title: z.string().max(200).optional(),
+    artist: z.string().max(200).optional(),
+  })
+  .refine((b) => b.title !== undefined || b.artist !== undefined, 'Nothing to change');
+
+export const playlistBody = z.object({ name: z.string().trim().min(1, 'Give the playlist a name').max(80) });
+
+export const playlistUpdateBody = z
+  .object({
+    name: z.string().trim().min(1, 'Give the playlist a name').max(80).optional(),
+    songIds: z.array(objectId).max(1000).optional(),
+  })
+  .refine((b) => b.name !== undefined || b.songIds !== undefined, 'Nothing to change');
+
+export const playlistSongBody = z.object({ songId: objectId });
+export const playlistSongParams = z.object({ id: objectId, songId: objectId });

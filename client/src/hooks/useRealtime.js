@@ -1,6 +1,9 @@
 import { useEffect } from 'react';
 import { getSocket } from '../services/socket';
 import { acknowledgeDelivered, flushOutbox, markSeen, syncNewer } from '../services/chatActions';
+import { loadStatuses, statusSocketHandlers } from '../services/statusActions';
+import { refreshWatch, watchSocketHandlers } from '../services/watchActions';
+import { musicSocketHandlers, refreshListening } from '../services/musicActions';
 import { ensurePushSubscription, getPushEndpoint, onPushEndpointChange, showLocalNotification } from '../services/push';
 import { useChatStore } from '../store/chatStore';
 import { APP_NAME } from '../config';
@@ -60,6 +63,9 @@ export function useRealtime({ onSessionEnded }) {
         }
         syncNewer();
         flushOutbox();
+        loadStatuses();
+        refreshWatch();
+        refreshListening();
       },
       disconnect: (reason) => {
         store().setPeerTyping(false);
@@ -98,6 +104,9 @@ export function useRealtime({ onSessionEnded }) {
       },
       'presence:state': ({ peer }) => store().setPeer(peer),
       'user:updated': (user) => (user.id === store().peer?.id ? store().setPeer(user) : store().setMe(user)),
+      ...statusSocketHandlers,
+      ...watchSocketHandlers,
+      ...musicSocketHandlers,
       'session:revoked': () => onSessionEnded('You were signed out on all devices.'),
       'session:expired': () => onSessionEnded('Your session expired. Please sign in again.'),
     };

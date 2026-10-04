@@ -225,15 +225,26 @@ export function toggleCamera() {
 }
 
 export async function switchCamera() {
-  if (!session) return;
+  if (!session || s().switchingCamera) return;
+  s().patch({ switchingCamera: true });
+  const current = session;
   try {
-    const facingMode = await session.switchCamera();
-    // New MediaStream reference so the preview re-binds the new track.
-    s().patch({ facingMode, localStream: new MediaStream(session.localStream.getTracks()) });
-    session.localStream = s().localStream;
+    await current.switchCamera();
   } catch {
     toast.error("Couldn't switch camera.");
+  } finally {
+    if (current === session && !current.closed) {
+      // New MediaStream reference so the preview re-binds the new track.
+      s().patch({ facingMode: current.facingMode, localStream: new MediaStream(current.localStream.getTracks()) });
+      current.localStream = s().localStream;
+    }
+    s().patch({ switchingCamera: false });
   }
+}
+
+/** Shrinks the call to a floating window so the chat can be used, or brings it back. */
+export function setCallMinimized(minimized) {
+  s().patch({ minimized, ...(!minimized && { chatSeenAt: Date.now() }) });
 }
 
 // ---- Socket events ------------------------------------------------------------------

@@ -6,11 +6,15 @@ export function avatarUrl(user) {
   return user?.avatar?.key ? storage.url(user.avatar.key, { resourceType: 'image', variant: 'thumb' }) : null;
 }
 
+// Full resolution, for viewing someone's profile photo full screen.
+const avatarFullUrl = (user) => (user?.avatar?.key ? storage.url(user.avatar.key, { resourceType: 'image', variant: 'full' }) : null);
+
 export function publicUser(user, presence = {}) {
   return {
     id: id(user._id),
     name: user.name,
     avatarUrl: avatarUrl(user),
+    avatarFullUrl: avatarFullUrl(user),
     isOnline: presence.isOnline ?? user.isOnline,
     lastSeen: presence.lastSeen ?? user.lastSeen,
     acceptsVoiceCalls: user.settings?.allowVoiceCalls !== false,
@@ -31,7 +35,7 @@ export function selfUser(user) {
   };
 }
 
-function serializeMedia(media) {
+export function serializeMedia(media) {
   if (!media) return null;
   let thumbnailUrl = null;
   if (media.thumbnailKey) thumbnailUrl = storage.url(media.thumbnailKey, { resourceType: 'image', variant: 'thumb' });
@@ -62,6 +66,23 @@ function serializeReply(reply) {
   };
 }
 
+// Reply to a status: the preview image is only offered while the status
+// (and so its file) still exists.
+function serializeStatusReply(message) {
+  const reply = message.statusReply;
+  if (!reply?.statusId) return null;
+  const expired = new Date(reply.expiresAt).getTime() <= Date.now();
+  return {
+    statusId: id(reply.statusId),
+    ownerId: id(message.receiverId),
+    type: reply.type,
+    text: reply.text || '',
+    background: reply.background ?? 0,
+    thumbnailUrl: !expired && reply.media ? serializeMedia(reply.media).thumbnailUrl : null,
+    expired,
+  };
+}
+
 export function serializeMessage(message) {
   const deleted = Boolean(message.deletedAt);
   return {
@@ -76,12 +97,28 @@ export function serializeMessage(message) {
     // Kept flat as well for consumers that only need the URLs.
     mediaUrl: deleted || !message.media ? null : storage.url(message.media.key, { resourceType: message.media.resourceType, mimeType: message.media.mimeType }),
     replyTo: serializeReply(message.replyTo),
+    statusReply: deleted ? null : serializeStatusReply(message),
     reactions: (message.reactions || []).map((r) => ({ userId: id(r.userId), emoji: r.emoji })),
     status: message.status,
     deliveredAt: message.deliveredAt,
     readAt: message.readAt,
+    editedAt: deleted ? null : message.editedAt ?? null,
     deleted,
     createdAt: message.createdAt,
+  };
+}
+
+export function serializeStatus(status) {
+  return {
+    id: id(status._id),
+    userId: id(status.userId),
+    type: status.type,
+    text: status.text || '',
+    background: status.background ?? 0,
+    media: serializeMedia(status.media),
+    viewedAt: status.viewedAt ?? null,
+    createdAt: status.createdAt,
+    expiresAt: status.expiresAt,
   };
 }
 

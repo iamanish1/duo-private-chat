@@ -4,6 +4,7 @@ import { MessageStatus } from './MessageStatus';
 import { MediaContent } from './MediaContent';
 import { VoiceNote } from './VoiceNote';
 import { ReplyQuote } from './ReplyQuote';
+import { StatusQuote } from '../status/StatusQuote';
 import { RichText } from './RichText';
 import { useBubbleGestures } from '../../hooks/useBubbleGestures';
 import { isEmojiOnly } from '../../utils/emoji';
@@ -45,12 +46,13 @@ export const MessageBubble = memo(function MessageBubble({
   const [fresh] = useState(() => Date.now() - new Date(message.createdAt).getTime() < 10_000);
   const time = formatTime(message.createdAt);
   const isMedia = (message.type === 'image' || message.type === 'video') && !message.deleted;
-  const bigEmoji = message.type === 'text' && !message.replyTo && isEmojiOnly(message.text);
+  const bigEmoji = message.type === 'text' && !message.replyTo && !message.statusReply && isEmojiOnly(message.text);
   const statusIcon = mine && !message.deleted ? <MessageStatus status={message.status} onMedia={isMedia && !message.text} /> : null;
   const replyAuthor = message.replyTo ? (message.replyTo.senderId === me?.id ? 'You' : peer?.name) : null;
 
   const meta = (
     <span className={`inline-flex items-center gap-1 text-[11px] leading-none ${mine ? 'text-on-accent/75' : 'text-muted'}`}>
+      {message.editedAt && !message.deleted && <span className="italic">edited</span>}
       {time}
       {statusIcon}
     </span>
@@ -71,6 +73,7 @@ export const MessageBubble = memo(function MessageBubble({
         <div className={`flex ${mine ? 'justify-end' : ''}`}>
           <span className="inline-flex items-center gap-1 rounded-full bg-surface-2 px-2 py-0.5 text-[11px] text-muted">
             {time}
+            {message.editedAt && <span className="italic">edited</span>}
             {mine && <MessageStatus status={message.status} onMedia />}
           </span>
         </div>
@@ -88,7 +91,12 @@ export const MessageBubble = memo(function MessageBubble({
             <ReplyQuote reply={message.replyTo} authorName={replyAuthor} mine={mine} onClick={() => onJump(message.replyTo.id)} />
           </div>
         )}
-        {isMedia && <MediaContent message={message} upload={upload} onOpen={onOpenMedia} meta={!message.text ? <>{time}{statusIcon}</> : null} />}
+        {message.statusReply && (
+          <div className="-mx-1.5 -mt-0.5">
+            <StatusQuote reply={message.statusReply} ownerName={message.statusReply.ownerId === me?.id ? 'You' : peer?.name} mine={mine} />
+          </div>
+        )}
+        {isMedia && <MediaContent message={message} upload={upload} onOpen={onOpenMedia} meta={!message.text ? <>{message.editedAt && <span className="italic">edited</span>}{time}{statusIcon}</> : null} />}
         {message.type === 'audio' && (
           <>
             <VoiceNote message={message} mine={mine} upload={upload} />

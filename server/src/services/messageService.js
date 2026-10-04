@@ -2,6 +2,7 @@ import { Message } from '../models/index.js';
 import { badRequest, forbidden, notFound } from '../utils/AppError.js';
 import { escapeRegex, sameId, toObjectId } from '../utils/ids.js';
 import { touchConversation } from './conversationService.js';
+import { findPeerStatus } from './statusService.js';
 import { removeMedia } from './storage/index.js';
 
 export const DEFAULT_PAGE_SIZE = 40;
@@ -41,7 +42,7 @@ async function findInConversation(conversationId, messageId) {
  * Creates a message from the session user to their peer. Sender, receiver
  * and conversation always come from the server-side session, never input.
  */
-export async function createMessage(session, { type = 'text', text = '', media, clientId, replyTo }) {
+export async function createMessage(session, { type = 'text', text = '', media, clientId, replyTo, statusId }) {
   const { user, conversation, peerId } = session;
 
   if (clientId) {
@@ -56,6 +57,19 @@ export async function createMessage(session, { type = 'text', text = '', media, 
     if (!exists) throw badRequest('The message you replied to no longer exists.', 'INVALID_REPLY');
   }
 
+  let statusReply;
+  if (statusId) {
+    const status = await findPeerStatus(session, statusId);
+    statusReply = {
+      statusId: status._id,
+      type: status.type,
+      text: status.text.slice(0, 160),
+      background: status.background,
+      media: status.media,
+      expiresAt: status.expiresAt,
+    };
+  }
+
   let doc;
   try {
     doc = await Message.create({
@@ -67,6 +81,7 @@ export async function createMessage(session, { type = 'text', text = '', media, 
       text: text.trim(),
       media,
       replyTo: replyTo ? toObjectId(replyTo) : null,
+      statusReply,
     });
   } catch (err) {
     // Concurrent retry with the same clientId: return the winner.
@@ -129,6 +144,34 @@ export async function deleteMessage(session, messageId) {
 }
 
 /** One reaction per person per message; `emoji: null` removes it. */
+export const EDIT_WINDOW_MS = 15 * 60 * 1000;
+const CAPTION_MAX = 1000;
+
+/**
+ * The sender corrects a text message or a photo/video caption, within
+ * EDIT_WINDOW_MS of sending. Voice notes have no text to edit.
+ */
+export async function editMessage(session, messageId, rawText) {
+  const message = await findInConversation(session.conversation._id, messageId);
+  if (!sameId(message.senderId, session.user._id)) throw forbidden('You can only edit your own messages.', 'NOT_SENDER');
+  if (message.deletedAt) throw badRequest('This message was deleted.', 'MESSAGE_DELETED');
+  if (message.type === 'audio') throw badRequest('Voice notes can’t be edited.', 'NOT_EDITABLE');
+  if (Date.now() - message.createdAt.getTime() > EDIT_WINDOW_MS) {
+    throw forbidden('Messages can only be edited for 15 minutes after sending.', 'EDIT_WINDOW_PASSED');
+  }
+  const text = rawText.trim();
+  if (message.type === 'text' && !text) throw badRequest('Message cannot be empty.', 'EMPTY_MESSAGE');
+  if (message.type !== 'text' && text.length > CAPTION_MAX) {
+    throw badRequest('Captions can be up to 1000 characters.', 'VALIDATION_ERROR');
+  }
+  if (text !== message.text) {
+    message.text = text;
+    message.editedAt = new Date();
+    await message.save();
+  }
+  return withReply(Message.findById(message._id)).lean();
+}
+
 export async function setReaction(session, messageId, emoji) {
   const message = await findInConversation(session.conversation._id, messageId);
   if (message.deletedAt) throw badRequest('You cannot react to a deleted message.', 'MESSAGE_DELETED');

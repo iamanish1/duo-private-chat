@@ -12,11 +12,14 @@ const initialState = {
   micEnabled: true,
   cameraEnabled: true,
   canSwitchCamera: false,
+  switchingCamera: false,
   facingMode: 'user',
   connectedAt: null,
   reconnecting: false,
   endReason: null,
   error: null,
+  minimized: false, // call shrunk to a floating window while chatting
+  chatSeenAt: null, // incoming messages after this show as a badge on the Chat button
 };
 
 export const useCallStore = create((set) => ({

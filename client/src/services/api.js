@@ -66,6 +66,7 @@ export const chatApi = {
   send: (body) => data(api.post('/messages', body)),
   markRead: (id) => data(api.patch(`/messages/${id}/read`)),
   remove: (id) => data(api.delete(`/messages/${id}`)),
+  edit: (id, text) => data(api.patch(`/messages/${id}`, { text })),
   react: (id, emoji) => data(api.put(`/messages/${id}/reaction`, { emoji })),
   search: (params, signal) => data(api.get('/messages/search', { params, signal })),
   media: (params) => data(api.get('/messages/media', { params })),
@@ -92,6 +93,21 @@ export const notificationApi = {
   subscribe: (subscription) => data(api.post('/notifications/subscribe', subscription)),
   unsubscribe: (endpoint) => data(api.delete('/notifications/subscribe', { data: { endpoint } })),
   test: () => data(api.post('/notifications/test')),
+};
+
+export const statusApi = {
+  list: () => data(api.get('/statuses')),
+  postText: (text, background) => data(api.post('/statuses', { text, background })),
+  upload: (formData, { onProgress, signal } = {}) =>
+    data(
+      api.post('/statuses/media', formData, {
+        signal,
+        timeout: 0,
+        onUploadProgress: (e) => e.total && onProgress?.(e.loaded / e.total),
+      }),
+    ),
+  view: (id) => data(api.post(`/statuses/${id}/view`)),
+  remove: (id) => data(api.delete(`/statuses/${id}`)),
 };
 
 export const callApi = {

@@ -10,7 +10,7 @@ import { LIMITS } from '../../config';
 let seq = 0;
 
 /** Review picked photos/videos before sending: compression, validation, caption. */
-export function MediaPreviewSheet({ files, onCancel, onSend }) {
+export function MediaPreviewSheet({ files, onCancel, onSend, captionLength = LIMITS.captionLength, sendLabel = 'Send' }) {
   const [items, setItems] = useState([]);
   const [activeId, setActiveId] = useState(null);
   const [caption, setCaption] = useState('');
@@ -108,12 +108,12 @@ export function MediaPreviewSheet({ files, onCancel, onSend }) {
       <div className="flex items-end gap-2 px-3 pt-1 pb-[calc(var(--safe-bottom)+12px)]">
         <textarea
           value={caption}
-          onChange={(e) => setCaption(e.target.value.slice(0, LIMITS.captionLength))}
+          onChange={(e) => setCaption(e.target.value.slice(0, captionLength))}
           placeholder="Add a caption…"
           rows={1}
           className="max-h-28 min-h-12 flex-1 resize-none rounded-3xl bg-white/12 px-4 py-3 text-white placeholder:text-white/50 focus:bg-white/18 focus:outline-none"
         />
-        <IconButton label={`Send ${ready.length || ''}`} variant="accent" size="lg" onClick={send} disabled={!ready.length || processing}>
+        <IconButton label={`${sendLabel} ${ready.length || ''}`.trim()} variant="accent" size="lg" onClick={send} disabled={!ready.length || processing}>
           <SendHorizontal size={22} />
         </IconButton>
       </div>

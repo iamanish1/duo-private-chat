@@ -10,6 +10,9 @@ import { apiLimiter, csrfGuard, sanitizeInput } from './middleware/security.js';
 import { errorHandler, notFoundHandler, requestLogger } from './middleware/errorHandler.js';
 
 const MEDIA_ORIGINS = ['https://res.cloudinary.com'];
+// Watch together embeds YouTube's player (script + iframe + thumbnails).
+const YOUTUBE_SCRIPT = ['https://www.youtube.com', 'https://s.ytimg.com'];
+const YOUTUBE_FRAME = ['https://www.youtube.com', 'https://www.youtube-nocookie.com'];
 
 function securityHeaders() {
   return helmet({
@@ -18,9 +21,10 @@ function securityHeaders() {
       ? {
           directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'"],
+            scriptSrc: ["'self'", ...YOUTUBE_SCRIPT],
+            frameSrc: YOUTUBE_FRAME,
             styleSrc: ["'self'", "'unsafe-inline'"],
-            imgSrc: ["'self'", 'data:', 'blob:', ...MEDIA_ORIGINS],
+            imgSrc: ["'self'", 'data:', 'blob:', ...MEDIA_ORIGINS, 'https://i.ytimg.com'],
             mediaSrc: ["'self'", 'blob:', ...MEDIA_ORIGINS],
             // Older Safari doesn't treat 'self' as covering WebSockets; name the host explicitly.
             connectSrc: ["'self'", (req) => `wss://${req.get('host')}`, (req) => `ws://${req.get('host')}`, ...MEDIA_ORIGINS],
@@ -37,6 +41,8 @@ function securityHeaders() {
     // Split deployments load local-driver media cross-site.
     crossOriginResourcePolicy: { policy: config.clientOrigins.length ? 'cross-origin' : 'same-origin' },
     crossOriginEmbedderPolicy: false,
+    // YouTube's embedded player refuses to play without a referrer (error 153).
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
   });
 }
 

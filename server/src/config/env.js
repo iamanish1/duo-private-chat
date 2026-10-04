@@ -54,6 +54,7 @@ const schema = z.object({
   MEDIA_MAX_VIDEO_SECONDS: intWithDefault(300),
   MEDIA_MAX_VOICE_MB: intWithDefault(15),
   MEDIA_MAX_VOICE_SECONDS: intWithDefault(300),
+  MEDIA_MAX_SONG_MB: intWithDefault(50),
 
   VAPID_PUBLIC_KEY: optionalString,
   VAPID_PRIVATE_KEY: optionalString,
@@ -131,6 +132,7 @@ function buildConfig() {
       maxVideoSeconds: env.MEDIA_MAX_VIDEO_SECONDS,
       maxVoiceBytes: env.MEDIA_MAX_VOICE_MB * 1024 * 1024,
       maxVoiceSeconds: env.MEDIA_MAX_VOICE_SECONDS,
+      maxSongBytes: env.MEDIA_MAX_SONG_MB * 1024 * 1024,
     },
     push: {
       publicKey: env.VAPID_PUBLIC_KEY,

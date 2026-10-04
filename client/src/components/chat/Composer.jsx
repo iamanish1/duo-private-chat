@@ -1,14 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Camera, Keyboard, Mic, Paperclip, SendHorizontal, Smile } from 'lucide-react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Camera, Check, Keyboard, Mic, Paperclip, SendHorizontal, Smile } from 'lucide-react';
 import { IconButton } from '../common/IconButton';
 import { EmojiPicker } from './EmojiPicker';
 import { ReplyBar } from './ReplyBar';
+import { EditBar } from './EditBar';
 import { AttachmentSheet } from './AttachmentSheet';
 import { MediaPreviewSheet } from './MediaPreviewSheet';
 import { VoiceRecorderBar } from './VoiceRecorderBar';
 import { useChatStore } from '../../store/chatStore';
 import { useTypingEmitter } from '../../hooks/useTypingEmitter';
-import { sendMedia, sendText, sendVoice } from '../../services/chatActions';
+import { editMessage, sendMedia, sendText, sendVoice } from '../../services/chatActions';
 import { voiceSupported } from '../../utils/voiceRecorder';
 import { ACCEPTED_IMAGE_TYPES, ACCEPTED_VIDEO_TYPES, LIMITS } from '../../config';
 
@@ -34,6 +35,8 @@ const isTouch = () => window.matchMedia('(pointer: coarse)').matches;
 export function Composer({ onFirstSend }) {
   const replyTo = useChatStore((s) => s.replyTo);
   const setReplyTo = useChatStore((s) => s.setReplyTo);
+  const editing = useChatStore((s) => s.editing);
+  const setEditing = useChatStore((s) => s.setEditing);
   const me = useChatStore((s) => s.me);
   const peer = useChatStore((s) => s.peer);
   const ready = useChatStore((s) => s.status === 'ready');
@@ -47,6 +50,29 @@ export function Composer({ onFirstSend }) {
   const inputRef = useRef(null);
   const fileRef = useRef(null);
   const { onType, stop } = useTypingEmitter();
+  // Whatever was being typed before an edit started, restored afterwards.
+  const textRef = useRef(text);
+  textRef.current = text;
+  const draftBeforeEdit = useRef('');
+  const editingId = useRef(null);
+
+  useLayoutEffect(() => {
+    const id = editing?.id ?? null;
+    if (id === editingId.current) return;
+    if (id && !editingId.current) draftBeforeEdit.current = textRef.current;
+    editingId.current = id;
+    if (editing) {
+      setText(editing.text);
+      setEmojiOpen(false);
+      requestAnimationFrame(() => {
+        const el = inputRef.current;
+        el?.focus();
+        el?.setSelectionRange(el.value.length, el.value.length);
+      });
+    } else {
+      setText(draftBeforeEdit.current);
+    }
+  }, [editing]);
 
   // Auto-grow the textarea up to ~6 lines.
   useEffect(() => {
@@ -70,14 +96,26 @@ export function Composer({ onFirstSend }) {
 
   const submit = useCallback(() => {
     const value = text.trim();
+    if (editing) {
+      // Captions may be cleared; text messages may not.
+      if (!value && editing.type === 'text') return;
+      editMessage(editing, value);
+      setEditing(null);
+      return;
+    }
     if (!value || !ready) return;
     sendText(value);
     setText('');
     stop();
     onFirstSend?.();
-  }, [text, ready, stop, onFirstSend]);
+  }, [text, ready, stop, onFirstSend, editing, setEditing]);
 
   const onKeyDown = (e) => {
+    if (e.key === 'Escape' && editing) {
+      e.preventDefault();
+      setEditing(null);
+      return;
+    }
     // Desktop: Enter sends, Shift+Enter breaks the line. Touch keyboards insert newlines.
     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && !isTouch()) {
       e.preventDefault();
@@ -135,7 +173,8 @@ export function Composer({ onFirstSend }) {
   };
 
   const hasText = text.trim().length > 0;
-  const showMic = canRecord && !hasText;
+  const showMic = canRecord && !hasText && !editing;
+  const showSend = hasText || Boolean(editing);
 
   const startRecording = () => {
     setEmojiOpen(false);
@@ -154,7 +193,11 @@ export function Composer({ onFirstSend }) {
 
   return (
     <div className="glass relative z-10 border-t border-line">
-      {replyTo && <ReplyBar message={replyTo} authorName={replyTo.senderId === me?.id ? 'yourself' : peer?.name} onCancel={() => setReplyTo(null)} />}
+      {editing ? (
+        <EditBar message={editing} onCancel={() => setEditing(null)} />
+      ) : (
+        replyTo && <ReplyBar message={replyTo} authorName={replyTo.senderId === me?.id ? 'yourself' : peer?.name} onCancel={() => setReplyTo(null)} />
+      )}
 
       {recording ? (
         <VoiceRecorderBar onSend={onVoiceRecorded} onClose={closeRecorder} />
@@ -184,7 +227,7 @@ export function Composer({ onFirstSend }) {
             aria-label="Message"
             className="block max-h-[148px] min-h-11 w-full resize-none bg-transparent px-4 py-[10px] leading-6 placeholder:text-muted focus:outline-none"
           />
-          {!hasText && (
+          {!hasText && !editing && (
             <div className="flex shrink-0 items-center pr-1 pb-0.5">
               <IconButton label="Attach photo or video" variant="muted" size="sm" onClick={() => setAttachOpen(true)} disabled={!ready}>
                 <Paperclip size={20} />
@@ -197,14 +240,14 @@ export function Composer({ onFirstSend }) {
         </div>
 
         <IconButton
-          label="Send"
+          label={editing ? 'Save edit' : 'Send'}
           variant="accent"
           onPointerDown={(e) => e.preventDefault() /* keep the keyboard open */}
           onClick={submit}
-          disabled={!hasText || !ready}
-          className={`transition-all duration-200 ${hasText ? 'scale-100 opacity-100' : 'pointer-events-none w-0 scale-50 opacity-0'}`}
+          disabled={!ready || (editing ? editing.type === 'text' && !hasText : !hasText)}
+          className={`transition-all duration-200 ${showSend ? 'scale-100 opacity-100' : 'pointer-events-none w-0 scale-50 opacity-0'}`}
         >
-          <SendHorizontal size={20} />
+          {editing ? <Check size={21} /> : <SendHorizontal size={20} />}
         </IconButton>
         {showMic && (
           <IconButton label="Record voice note" variant="accent" onClick={startRecording} disabled={!ready} className="animate-pop">

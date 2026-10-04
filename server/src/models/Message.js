@@ -5,7 +5,7 @@ export const MESSAGE_STATUSES = ['sent', 'delivered', 'read'];
 
 // Media binaries live in object storage; MongoDB keeps only the storage key
 // and metadata. URLs are generated (signed) when messages are serialized.
-const mediaSchema = new mongoose.Schema(
+export const mediaSchema = new mongoose.Schema(
   {
     key: { type: String, required: true },
     resourceType: { type: String, enum: ['image', 'video', 'audio'], required: true },
@@ -29,6 +29,20 @@ const reactionSchema = new mongoose.Schema(
   { _id: false },
 );
 
+// A reply to a status keeps a small copy of it, so the quote still makes
+// sense in the chat after the status itself has expired (24 h).
+const statusReplySchema = new mongoose.Schema(
+  {
+    statusId: { type: mongoose.Schema.Types.ObjectId, required: true },
+    type: { type: String, enum: ['text', 'image', 'video'], required: true },
+    text: { type: String, maxlength: 160, default: '' },
+    background: { type: Number, default: 0 },
+    media: { type: mediaSchema, default: undefined },
+    expiresAt: { type: Date, required: true },
+  },
+  { _id: false },
+);
+
 const messageSchema = new mongoose.Schema(
   {
     conversationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Conversation', required: true },
@@ -40,11 +54,14 @@ const messageSchema = new mongoose.Schema(
     text: { type: String, maxlength: 4000, default: '' },
     media: { type: mediaSchema, default: undefined },
     replyTo: { type: mongoose.Schema.Types.ObjectId, ref: 'Message', default: null },
+    statusReply: { type: statusReplySchema, default: undefined },
     reactions: { type: [reactionSchema], default: [] },
     status: { type: String, enum: MESSAGE_STATUSES, default: 'sent' },
     deliveredAt: { type: Date, default: null },
     readAt: { type: Date, default: null },
     deletedAt: { type: Date, default: null },
+    // Set when the sender corrected the text (shown as "edited").
+    editedAt: { type: Date, default: null },
   },
   { timestamps: true },
 );

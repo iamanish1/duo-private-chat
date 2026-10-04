@@ -59,3 +59,12 @@ export const initials = (name = '') =>
     .slice(0, 2)
     .map((part) => part[0].toUpperCase())
     .join('') || '?';
+
+/** "Just now", "12 min ago", "3 h ago" — for 24-hour statuses. */
+export function formatAgo(value, now = new Date()) {
+  const diffMs = now - new Date(value);
+  if (diffMs < 60_000) return 'Just now';
+  if (diffMs < 60 * 60_000) return `${Math.floor(diffMs / 60_000)} min ago`;
+  const day = formatDayLabel(value, now);
+  return `${day === 'Today' ? 'Today' : 'Yesterday'} at ${formatTime(value)}`;
+}

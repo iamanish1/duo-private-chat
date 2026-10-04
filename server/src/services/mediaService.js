@@ -53,11 +53,13 @@ export async function inspectUpload(file) {
  * Validates and stores the main file plus an optional client-made thumbnail.
  * Returns the media metadata persisted on the message.
  */
-export async function storeMessageMedia({ file, thumbnail, meta }) {
+const durationLabel = (seconds) => (seconds < 120 ? `${seconds} seconds` : `${Math.floor(seconds / 60)} minutes`);
+
+export async function storeMessageMedia({ file, thumbnail, meta, maxVideoSeconds = config.media.maxVideoSeconds }) {
   const kind = await inspectUpload(file);
-  if (kind.resourceType === 'video' && meta.duration && meta.duration > config.media.maxVideoSeconds) {
-    throw badRequest(`Videos can be up to ${Math.floor(config.media.maxVideoSeconds / 60)} minutes long.`, 'VIDEO_TOO_LONG');
-  }
+  const videoTooLong = () => badRequest(`Videos can be up to ${durationLabel(maxVideoSeconds)} long.`, 'VIDEO_TOO_LONG');
+  // A second of slack: encoders round clip lengths up.
+  if (kind.resourceType === 'video' && meta.duration && meta.duration > maxVideoSeconds + 1) throw videoTooLong();
 
   let thumbKind = null;
   if (thumbnail) {
@@ -79,9 +81,9 @@ export async function storeMessageMedia({ file, thumbnail, meta }) {
   };
 
   // Storage-reported duration is authoritative when available (Cloudinary).
-  if (media.resourceType === 'video' && media.duration > config.media.maxVideoSeconds) {
+  if (media.resourceType === 'video' && media.duration > maxVideoSeconds + 1) {
     await removeMedia(media);
-    throw badRequest(`Videos can be up to ${Math.floor(config.media.maxVideoSeconds / 60)} minutes long.`, 'VIDEO_TOO_LONG');
+    throw videoTooLong();
   }
 
   if (thumbnail) {
