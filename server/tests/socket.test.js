@@ -64,6 +64,9 @@ describe('realtime messaging', () => {
   it('delivers a message instantly, then delivery and read receipts', async () => {
     const alexSocket = await connect(alex);
     const samSocket = await connect(sam);
+    // Let Sam's connect-time "mark pending as delivered" sweep finish first;
+    // otherwise it can (correctly) mark the new message delivered straight away.
+    await delay(300);
 
     const incoming = waitFor(samSocket, 'message:new');
     const ack = await emitAck(alexSocket, 'message:send', { text: 'Hey ❤️', clientId: clientId() });

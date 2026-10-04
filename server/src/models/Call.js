@@ -16,6 +16,9 @@ const callSchema = new mongoose.Schema(
     endedAt: { type: Date, default: null },
     duration: { type: Number, default: 0 },
     endReason: { type: String, default: null },
+    // How each person's device connected: { [userId]: { route: 'direct'|'relay', relayHost, at } }.
+    // Lets us watch how much each free relay is used.
+    routes: { type: mongoose.Schema.Types.Mixed, default: undefined },
   },
   { timestamps: true },
 );

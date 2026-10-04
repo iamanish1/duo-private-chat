@@ -146,6 +146,15 @@ export async function relaySignal(session, socketId, event, { callId, ...payload
   return true;
 }
 
+/** Records how this person's device connected (direct, or through which relay). */
+export async function recordRoute(session, callId, { route, relayHost = null }) {
+  const userId = String(session.user._id);
+  await Call.updateOne(
+    { _id: toObjectId(callId), conversationId: session.conversation._id, $or: [{ callerId: session.user._id }, { receiverId: session.user._id }] },
+    { $set: { [`routes.${userId}`]: { route, relayHost, at: new Date() } } },
+  );
+}
+
 /** After a socket reconnect, re-attach it to the live call. */
 export async function rejoinCall(session, callId, socketId) {
   const call = await findActiveCall(session, callId);

@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { authApi, onSessionLost } from '../services/api';
 import { disconnectSocket } from '../services/socket';
 import { disableNotifications } from '../services/push';
+import { clearSongCache } from '../services/songCache';
 import { useChatStore } from '../store/chatStore';
 import { useCallStore } from '../store/callStore';
 
@@ -111,6 +112,7 @@ export function AuthProvider({ children }) {
         // Don't keep pushing to a device someone signed out of.
         await disableNotifications({ optOut: false }).catch(() => {});
         await (everywhere ? authApi.logoutEverywhere() : authApi.logout()).catch(() => {});
+        await clearSongCache();
         endSession(null);
       },
       endSession,

@@ -177,6 +177,30 @@ export class PeerSession {
     }
   }
 
+  /** How this device is connected: directly, or through which relay. */
+  async connectionRoute() {
+    const stats = await this.pc.getStats();
+    let pair = null;
+    stats.forEach((r) => {
+      if (r.type === 'transport' && r.selectedCandidatePairId) pair = stats.get(r.selectedCandidatePairId);
+    });
+    if (!pair) {
+      stats.forEach((r) => {
+        if (!pair && r.type === 'candidate-pair' && r.state === 'succeeded' && (r.selected || r.nominated)) pair = r;
+      });
+    }
+    const local = pair && stats.get(pair.localCandidateId);
+    if (!local) return null;
+    if (local.candidateType !== 'relay') return { route: 'direct', relayHost: null };
+    let relayHost = null;
+    try {
+      relayHost = local.url ? new URL(local.url.replace(/^turns?:/, 'http://')).hostname : null;
+    } catch {
+      relayHost = null;
+    }
+    return { route: 'relay', relayHost };
+  }
+
   async createOffer({ iceRestart = false } = {}) {
     const offer = await this.pc.createOffer({ iceRestart });
     await this.pc.setLocalDescription({ type: offer.type, sdp: tuneOpus(offer.sdp) });

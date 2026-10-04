@@ -58,6 +58,22 @@ services:
         sync: false
       - key: TURN_SERVER_CREDENTIAL
         sync: false
+      - key: TURN_BACKUP_URL
+        sync: false
+      - key: TURN_BACKUP_USERNAME
+        sync: false
+      - key: TURN_BACKUP_CREDENTIAL
+        sync: false
+      - key: TURN_BACKUP2_URL
+        sync: false
+      - key: TURN_BACKUP2_USERNAME
+        sync: false
+      - key: TURN_BACKUP2_CREDENTIAL
+        sync: false
+      - key: CLOUDFLARE_TURN_KEY_ID
+        sync: false
+      - key: CLOUDFLARE_TURN_API_TOKEN
+        sync: false
       - key: BREVO_API_KEY
         sync: false
       - key: EMAIL_FROM

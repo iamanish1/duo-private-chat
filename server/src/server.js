@@ -5,7 +5,7 @@ import { createApp } from './app.js';
 import { createSocketServer } from './sockets/index.js';
 import { User } from './models/index.js';
 import { closeStaleCalls } from './services/callService.js';
-import { sweepExpiredStatuses } from './services/statusService.js';
+import { runJanitor } from './services/janitorService.js';
 import { logger } from './utils/logger.js';
 
 async function start() {
@@ -16,10 +16,9 @@ async function start() {
   await User.updateMany({ isOnline: true }, { $set: { isOnline: false, lastSeen: new Date() } });
   await closeStaleCalls();
 
-  // Statuses last 24 hours; clear out expired ones (and their files) hourly.
-  const sweep = () => sweepExpiredStatuses().catch((err) => logger.warn('Status sweep failed', { message: err.message }));
-  sweep();
-  setInterval(sweep, 60 * 60 * 1000).unref();
+  // Storage janitor: expired statuses + failed deletions hourly, orphaned files daily.
+  runJanitor();
+  setInterval(runJanitor, 60 * 60 * 1000).unref();
 
   const server = http.createServer(createApp());
   const io = createSocketServer(server);

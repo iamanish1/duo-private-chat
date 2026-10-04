@@ -4,6 +4,7 @@ import { useChatStore } from '../../store/chatStore';
 import { control, currentPosition, reportEnded, togglePlay } from '../../services/musicActions';
 import { getAudio, setAudioElement } from '../../services/audioElement';
 import { resolveUrl } from '../../utils/url';
+import { songSource } from '../../services/songCache';
 
 const DRIFT_TOLERANCE_S = 1.5;
 const TICK_MS = 2000;
@@ -30,7 +31,9 @@ const absolute = (url) => (url ? new URL(resolveUrl(url), window.location.origin
  */
 export function ListenEngine() {
   const ref = useRef(null);
-  const loadedSong = useRef(null);
+  const loadedSong = useRef(null); // the song we're switching to
+  const readySong = useRef(null); // the song actually in the <audio> element
+  const source = useRef(null); // { url, revoke } of the current song
   const joined = useMusicStore((s) => s.joined);
   const room = useMusicStore((s) => s.room);
   const song = useMusicStore(currentSong);
@@ -57,20 +60,35 @@ export function ListenEngine() {
         audio.removeAttribute('src');
         audio.load();
         loadedSong.current = null;
+        readySong.current = null;
+        source.current?.revoke();
+        source.current = null;
       }
       return;
     }
     const target = expectedPosition(room, useMusicStore.getState().clockOffset);
     if (loadedSong.current !== song.id) {
       loadedSong.current = song.id;
-      audio.src = resolveUrl(song.url);
-      const start = () => {
-        audio.currentTime = expectedPosition(useMusicStore.getState().room, useMusicStore.getState().clockOffset);
-        if (useMusicStore.getState().room?.playing) play(audio);
-      };
-      audio.addEventListener('loadedmetadata', start, { once: true });
+      audio.pause();
+      // From this device if saved; otherwise downloaded once and saved.
+      songSource(song).then((src) => {
+        if (loadedSong.current !== song.id) {
+          src.revoke(); // switched again meanwhile
+          return;
+        }
+        source.current?.revoke();
+        source.current = src;
+        const start = () => {
+          readySong.current = song.id;
+          audio.currentTime = expectedPosition(useMusicStore.getState().room, useMusicStore.getState().clockOffset);
+          if (useMusicStore.getState().room?.playing) play(audio);
+        };
+        audio.addEventListener('loadedmetadata', start, { once: true });
+        audio.src = src.url;
+      });
       return;
     }
+    if (readySong.current !== song.id) return; // still loading
     if (audio.readyState >= 1 && Math.abs(audio.currentTime - target) > 1) audio.currentTime = target;
     if (room.playing && audio.paused) play(audio);
     if (!room.playing && !audio.paused) audio.pause();
@@ -82,7 +100,7 @@ export function ListenEngine() {
     const timer = setInterval(() => {
       const audio = ref.current;
       const { room: r, clockOffset, needsTap } = useMusicStore.getState();
-      if (!audio || !r || audio.readyState < 2 || loadedSong.current !== r.songId) return;
+      if (!audio || !r || audio.readyState < 2 || readySong.current !== r.songId) return;
       if (r.playing && audio.paused && !needsTap) play(audio);
       if (r.playing && !audio.paused) {
         const target = expectedPosition(r, clockOffset);

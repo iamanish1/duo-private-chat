@@ -217,4 +217,21 @@ describe('video calls', () => {
     const ice = await alex.get('/api/calls/ice-servers');
     expect(ice.body.iceServers[0].urls[0]).toMatch(/^stun:/);
   });
+  it('records how each phone connected (direct or which relay), only for the people in the call', async () => {
+    const caller = await connect(alex);
+    const callee = await connect(sam);
+    const incoming = waitFor(callee, 'call:incoming');
+    const { call } = await emitAck(caller, 'call:initiate', { type: 'audio' });
+    await incoming;
+    await emitAck(callee, 'call:accept', { callId: call.id });
+
+    expect((await emitAck(caller, 'call:route', { callId: call.id, route: 'direct' })).ok).toBe(true);
+    expect((await emitAck(callee, 'call:route', { callId: call.id, route: 'relay', relayHost: 'relay1.expressturn.com' })).ok).toBe(true);
+    expect((await emitAck(callee, 'call:route', { callId: call.id, route: 'teleport' })).ok).toBe(false);
+    expect((await emitAck(callee, 'call:route', { callId: call.id, route: 'relay', relayHost: 'evil.com/<script>' })).ok).toBe(false);
+
+    const stored = await Call.findById(call.id).lean();
+    expect(stored.routes[alex.user.id]).toMatchObject({ route: 'direct', relayHost: null });
+    expect(stored.routes[sam.user.id]).toMatchObject({ route: 'relay', relayHost: 'relay1.expressturn.com' });
+  });
 });

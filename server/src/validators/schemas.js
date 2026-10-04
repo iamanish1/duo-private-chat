@@ -128,6 +128,11 @@ export const socketSchemas = {
   'call:reject': z.object({ callId: objectId }),
   'call:end': z.object({ callId: objectId }),
   'call:rejoin': z.object({ callId: objectId }),
+  'call:route': z.object({
+    callId: objectId,
+    route: z.enum(['direct', 'relay']),
+    relayHost: z.string().regex(/^[a-z0-9.-]{1,100}$/i).nullable().optional(),
+  }),
   'webrtc:offer': z.object({
     callId: objectId,
     description: z.object({ type: z.literal('offer'), sdp: z.string().max(100_000) }),

@@ -7,7 +7,7 @@ export async function history(req, res) {
   res.json(await listCalls(req.session.conversation._id, req.valid.query));
 }
 
-export function iceServers(req, res) {
+export async function iceServers(req, res) {
   res.set('Cache-Control', 'no-store');
-  res.json(getIceServers(String(req.session.user._id)));
+  res.json(await getIceServers(String(req.session.user._id)));
 }

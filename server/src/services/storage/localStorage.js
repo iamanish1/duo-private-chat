@@ -41,5 +41,15 @@ export function createLocalStorage({ directory }) {
     async remove(key) {
       await fs.rm(resolveKey(key), { force: true });
     },
+
+    /** Every stored file: { key, resourceType, bytes, createdAt }. */
+    async *list() {
+      await ready;
+      for (const name of await fs.readdir(directory)) {
+        if (!LOCAL_KEY_PATTERN.test(name)) continue;
+        const info = await fs.stat(path.join(directory, name));
+        yield { key: name, resourceType: 'image', bytes: info.size, createdAt: info.mtime };
+      }
+    },
   };
 }

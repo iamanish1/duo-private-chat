@@ -3,6 +3,7 @@ import { api } from './api';
 import { emit, emitWithAck } from './socket';
 import { expectedPosition, useMusicStore } from '../store/musicStore';
 import { getAudio } from './audioElement';
+import { forgetSong } from './songCache';
 import { useChatStore } from '../store/chatStore';
 import { toast } from '../store/toastStore';
 
@@ -60,7 +61,11 @@ async function run(promise, apply) {
 }
 
 export const editSong = (id, changes) => run(api.patch(`/music/songs/${id}`, changes), ({ song }) => store().upsertSong(song));
-export const deleteSong = (id) => run(api.delete(`/music/songs/${id}`), () => store().removeSong(id));
+export const deleteSong = (id) =>
+  run(api.delete(`/music/songs/${id}`), () => {
+    store().removeSong(id);
+    forgetSong(id);
+  });
 export const createPlaylist = (name) => run(api.post('/music/playlists', { name }), ({ playlist }) => store().upsertPlaylist(playlist));
 export const renamePlaylist = (id, name) => run(api.patch(`/music/playlists/${id}`, { name }), ({ playlist }) => store().upsertPlaylist(playlist));
 export const deletePlaylist = (id) => run(api.delete(`/music/playlists/${id}`), () => store().removePlaylist(id));
@@ -190,7 +195,10 @@ export async function refreshListening() {
 
 export const musicSocketHandlers = {
   'music:song': (song) => store().upsertSong(song),
-  'music:song-removed': ({ id }) => store().removeSong(id),
+  'music:song-removed': ({ id }) => {
+    store().removeSong(id);
+    forgetSong(id);
+  },
   'music:playlist': (playlist) => store().upsertPlaylist(playlist),
   'music:playlist-removed': ({ id }) => store().removePlaylist(id),
   'listen:state': (room) => {

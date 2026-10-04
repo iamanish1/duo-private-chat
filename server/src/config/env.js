@@ -65,6 +65,15 @@ const schema = z.object({
   TURN_SERVER_USERNAME: optionalString,
   TURN_SERVER_CREDENTIAL: optionalString,
   TURN_SHARED_SECRET: optionalString,
+  // Backup relays, tried after the main one (e.g. when its free monthly allowance runs out).
+  TURN_BACKUP_URL: optionalString,
+  TURN_BACKUP_USERNAME: optionalString,
+  TURN_BACKUP_CREDENTIAL: optionalString,
+  TURN_BACKUP2_URL: optionalString,
+  TURN_BACKUP2_USERNAME: optionalString,
+  TURN_BACKUP2_CREDENTIAL: optionalString,
+  CLOUDFLARE_TURN_KEY_ID: optionalString,
+  CLOUDFLARE_TURN_API_TOKEN: optionalString,
 
   SMTP_HOST: optionalString,
   SMTP_PORT: intWithDefault(587),
@@ -146,6 +155,12 @@ function buildConfig() {
       turnUsername: env.TURN_SERVER_USERNAME,
       turnCredential: env.TURN_SERVER_CREDENTIAL,
       turnSharedSecret: env.TURN_SHARED_SECRET,
+      backupRelays: [
+        { urls: csv(env.TURN_BACKUP_URL), username: env.TURN_BACKUP_USERNAME, credential: env.TURN_BACKUP_CREDENTIAL },
+        { urls: csv(env.TURN_BACKUP2_URL), username: env.TURN_BACKUP2_USERNAME, credential: env.TURN_BACKUP2_CREDENTIAL },
+      ].filter((relay) => relay.urls.length),
+      cloudflareTurnKeyId: env.CLOUDFLARE_TURN_KEY_ID,
+      cloudflareTurnApiToken: env.CLOUDFLARE_TURN_API_TOKEN,
     },
     email: {
       host: env.SMTP_HOST,

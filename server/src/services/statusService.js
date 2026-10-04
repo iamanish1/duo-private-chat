@@ -64,7 +64,7 @@ export async function deleteStatus(session, statusId) {
   if (!sameId(status.userId, session.user._id)) throw forbidden('You can only delete your own status.', 'NOT_OWNER');
   await Status.deleteOne({ _id: status._id });
   // Replies keep their text quote but stop pointing at the deleted file.
-  await Message.updateMany({ 'statusReply.statusId': status._id }, { $set: { 'statusReply.expiresAt': new Date() } });
+  await Message.updateMany({ 'statusReply.statusId': status._id }, { $set: { 'statusReply.expiresAt': new Date() }, $unset: { 'statusReply.media': 1 } });
   removeMedia(status.media);
   return status;
 }
@@ -74,7 +74,10 @@ export async function sweepExpiredStatuses() {
   const expired = await Status.find({ expiresAt: { $lte: new Date() } }).select('media').lean();
   if (!expired.length) return 0;
   await Promise.all(expired.map((s) => removeMedia(s.media)));
-  await Status.deleteMany({ _id: { $in: expired.map((s) => s._id) } });
+  const ids = expired.map((s) => s._id);
+  await Status.deleteMany({ _id: { $in: ids } });
+  // Replies keep their text quote, without a pointer to the deleted file.
+  await Message.updateMany({ 'statusReply.statusId': { $in: ids } }, { $unset: { 'statusReply.media': 1 } });
   logger.info(`Removed ${expired.length} expired status${expired.length === 1 ? '' : 'es'}`);
   return expired.length;
 }

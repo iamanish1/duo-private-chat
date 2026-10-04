@@ -107,6 +107,7 @@ export function serializeSong(song) {
     artist: song.artist || '',
     album: song.album || '',
     duration: song.audio.duration,
+    size: song.audio.size,
     mimeType: song.audio.mimeType,
     url: storage.url(song.audio.key, { resourceType: 'audio', format: EXTENSION_OF[song.audio.mimeType], mimeType: song.audio.mimeType }),
     coverUrl: song.coverKey ? storage.url(song.coverKey, { resourceType: 'image', variant: 'thumb' }) : null,

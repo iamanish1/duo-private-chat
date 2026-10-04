@@ -81,6 +81,21 @@ export function createCloudinaryStorage({ cloudName, apiKey, apiSecret, folder }
       });
     },
 
+    /**
+     * Every file Duo stored, page by page: { key, resourceType, bytes, createdAt }.
+     * (Admin API; songs and voice notes live under Cloudinary's "video" type.)
+     */
+    async *list() {
+      for (const resourceType of ['image', 'video']) {
+        let cursor;
+        do {
+          const page = await cloudinary.api.resources({ type: 'authenticated', resource_type: resourceType, prefix: `${folder}/`, max_results: 500, next_cursor: cursor });
+          for (const r of page.resources) yield { key: r.public_id, resourceType, bytes: r.bytes ?? 0, createdAt: new Date(r.created_at) };
+          cursor = page.next_cursor;
+        } while (cursor);
+      }
+    },
+
     async remove(key, resourceType = 'image') {
       await cloudinary.uploader.destroy(key, { resource_type: cloudType(resourceType), type: 'authenticated', invalidate: true });
     },

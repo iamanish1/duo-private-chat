@@ -10,6 +10,7 @@ export function registerCallHandlers(socket, on) {
   on('call:reject', async ({ callId }) => ({ call: await calls.rejectCall(session, callId) }));
   on('call:end', async ({ callId }) => ({ call: await calls.endCall(session, callId) }));
   on('call:rejoin', async ({ callId }) => ({ call: await calls.rejoinCall(session, callId, socket.id) }));
+  on('call:route', async ({ callId, ...route }) => calls.recordRoute(session, callId, route));
 
   // WebRTC signaling: relayed only between the two sockets bound to the call.
   for (const event of SIGNAL_EVENTS) {

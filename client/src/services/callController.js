@@ -59,8 +59,10 @@ function createSession(stream) {
     onIceCandidate: (candidate) => emit('webrtc:ice-candidate', { callId, candidate }),
     onRemoteStream: (remoteStream) => s().patch({ remoteStream }),
     onConnectionState: (state) => {
-      if (state === 'connected') s().patch({ phase: 'active', reconnecting: false, connectedAt: s().connectedAt ?? Date.now() });
-      else if (state === 'disconnected') s().patch({ reconnecting: true });
+      if (state === 'connected') {
+        s().patch({ phase: 'active', reconnecting: false, connectedAt: s().connectedAt ?? Date.now() });
+        reportRoute(callId);
+      } else if (state === 'disconnected') s().patch({ reconnecting: true });
       else if (state === 'failed') {
         s().patch({ reconnecting: true });
         restartIce();
@@ -69,6 +71,16 @@ function createSession(stream) {
   });
   // Keep the screen on for video; voice calls may let it sleep.
   if (s().kind === 'video') acquireWakeLock();
+}
+
+/** Tells the server how we connected (direct or which relay), to track relay usage. */
+function reportRoute(callId) {
+  const current = session;
+  setTimeout(async () => {
+    if (!current || current !== session || current.closed) return;
+    const route = await current.connectionRoute().catch(() => null);
+    if (route) emit('call:route', { callId, ...route });
+  }, 1500);
 }
 
 /** Only the caller makes offers (no glare); the callee asks for a restart. */
