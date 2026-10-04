@@ -5,6 +5,8 @@ import { StateScreen } from '../components/common/StateScreen';
 import { Spinner } from '../components/common/Spinner';
 import { MediaGrid } from '../components/media/MediaGrid';
 import { MediaViewer } from '../components/media/MediaViewer';
+import { RemovingSoon } from '../components/media/RemovingSoon';
+import { useSearchParams } from 'react-router';
 import { usePaginatedList } from '../hooks/usePaginatedList';
 import { chatApi } from '../services/api';
 
@@ -15,7 +17,9 @@ const TABS = [
 const monthFormat = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' });
 
 export default function Media() {
-  const [tab, setTab] = useState('image');
+  const [params] = useSearchParams();
+  // Arriving from the "removing soon" reminder: open on Videos.
+  const [tab, setTab] = useState(() => (params.get('show') === 'expiring' ? 'video' : 'image'));
   const [viewing, setViewing] = useState(null);
   const fetchPage = useCallback(
     (before) => chatApi.media({ type: tab, before }).then(({ messages, hasMore }) => ({ items: messages, hasMore })),
@@ -51,6 +55,8 @@ export default function Media() {
           ))}
         </div>
       </div>
+
+      {tab === 'video' && <RemovingSoon onOpen={setViewing} />}
 
       {error && !items.length ? (
         <StateScreen title="Couldn't load media" description={error} action={{ label: 'Try again', onClick: reload }} className="py-24" />

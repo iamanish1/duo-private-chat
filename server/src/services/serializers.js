@@ -1,4 +1,7 @@
 import { storage } from './storage/index.js';
+import { config } from '../config/env.js';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 const id = (value) => (value == null ? null : String(value));
 
@@ -83,6 +86,13 @@ function serializeStatusReply(message) {
   };
 }
 
+function mediaRemovalDate(message, deleted) {
+  const { retentionDays, retentionTypes } = config.media;
+  if (deleted || !retentionDays || !message.media || message.keptAt || message.mediaExpiredAt) return null;
+  if (!retentionTypes.includes(message.type)) return null;
+  return new Date(new Date(message.createdAt).getTime() + retentionDays * DAY_MS);
+}
+
 export function serializeMessage(message) {
   const deleted = Boolean(message.deletedAt);
   return {
@@ -103,6 +113,10 @@ export function serializeMessage(message) {
     deliveredAt: message.deliveredAt,
     readAt: message.readAt,
     editedAt: deleted ? null : message.editedAt ?? null,
+    kept: Boolean(message.keptAt),
+    mediaExpired: Boolean(message.mediaExpiredAt),
+    // When the file will be removed (old-video clean-up), unless kept.
+    mediaRemovesAt: mediaRemovalDate(message, deleted),
     deleted,
     createdAt: message.createdAt,
   };

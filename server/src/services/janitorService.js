@@ -2,6 +2,7 @@ import { JanitorRun, MediaTrash, Message, Song, Status, User } from '../models/i
 import { logger } from '../utils/logger.js';
 import { storage } from './storage/index.js';
 import { sweepExpiredStatuses } from './statusService.js';
+import { expireOldMedia } from './messageService.js';
 
 // Storage janitor: keeps the database and object storage lean.
 //  - hourly: delete expired statuses (+ files) and retry failed deletions
@@ -76,16 +77,17 @@ export async function runJanitor({ forceOrphanScan = false } = {}) {
   if (running) return null;
   running = true;
   try {
-    const result = { statusesRemoved: await sweepExpiredStatuses(), ...(await emptyTrash()) };
+    const result = { statusesRemoved: await sweepExpiredStatuses(), ...(await expireOldMedia()), ...(await emptyTrash()) };
     const lastScan = await JanitorRun.findOne({ orphanScan: true }).sort({ at: -1 }).lean();
     if (forceOrphanScan || !lastScan || Date.now() - lastScan.at.getTime() > ORPHAN_SCAN_EVERY_MS) {
       Object.assign(result, { orphanScan: true }, await deleteOrphans());
     }
-    const busy = result.statusesRemoved || result.trashCleared || result.orphansDeleted;
+    const busy = result.statusesRemoved || result.mediaExpired || result.trashCleared || result.orphansDeleted;
     if (busy || result.orphanScan) await JanitorRun.create(result);
     if (busy) {
       const mb = ((result.bytesFreed || 0) / 1024 / 1024).toFixed(1);
-      logger.info(`Janitor: ${result.statusesRemoved} expired statuses, ${result.trashCleared} retried deletions, ${result.orphansDeleted || 0} orphan files (${mb} MB) removed`);
+      const videoMb = ((result.mediaBytesFreed || 0) / 1024 / 1024).toFixed(1);
+      logger.info(`Janitor: ${result.statusesRemoved} expired statuses, ${result.mediaExpired} old videos (${videoMb} MB), ${result.trashCleared} retried deletions, ${result.orphansDeleted || 0} orphan files (${mb} MB) removed`);
     }
     return result;
   } catch (err) {

@@ -1,5 +1,5 @@
 import { memo, useState } from 'react';
-import { Ban, Reply } from 'lucide-react';
+import { Ban, Bookmark, Clock, Reply } from 'lucide-react';
 import { MessageStatus } from './MessageStatus';
 import { MediaContent } from './MediaContent';
 import { VoiceNote } from './VoiceNote';
@@ -45,13 +45,15 @@ export const MessageBubble = memo(function MessageBubble({
   // Animate only messages that arrive while the chat is open, not history.
   const [fresh] = useState(() => Date.now() - new Date(message.createdAt).getTime() < 10_000);
   const time = formatTime(message.createdAt);
-  const isMedia = (message.type === 'image' || message.type === 'video') && !message.deleted;
+  const isMedia = (message.type === 'image' || message.type === 'video') && !message.deleted && !message.mediaExpired;
+  const keptMark = message.kept && !message.deleted ? <Bookmark size={11} className="fill-current" aria-label="Kept forever" /> : null;
   const bigEmoji = message.type === 'text' && !message.replyTo && !message.statusReply && isEmojiOnly(message.text);
   const statusIcon = mine && !message.deleted ? <MessageStatus status={message.status} onMedia={isMedia && !message.text} /> : null;
   const replyAuthor = message.replyTo ? (message.replyTo.senderId === me?.id ? 'You' : peer?.name) : null;
 
   const meta = (
     <span className={`inline-flex items-center gap-1 text-[11px] leading-none ${mine ? 'text-on-accent/75' : 'text-muted'}`}>
+      {keptMark}
       {message.editedAt && !message.deleted && <span className="italic">edited</span>}
       {time}
       {statusIcon}
@@ -96,7 +98,13 @@ export const MessageBubble = memo(function MessageBubble({
             <StatusQuote reply={message.statusReply} ownerName={message.statusReply.ownerId === me?.id ? 'You' : peer?.name} mine={mine} />
           </div>
         )}
-        {isMedia && <MediaContent message={message} upload={upload} onOpen={onOpenMedia} meta={!message.text ? <>{message.editedAt && <span className="italic">edited</span>}{time}{statusIcon}</> : null} />}
+        {isMedia && <MediaContent message={message} upload={upload} onOpen={onOpenMedia} meta={!message.text ? <>{keptMark}{message.editedAt && <span className="italic">edited</span>}{time}{statusIcon}</> : null} />}
+        {message.mediaExpired && !message.deleted && (
+          <p className={`flex items-center gap-2 text-[14.5px] italic ${mine ? 'text-on-accent/85' : 'text-muted'}`}>
+            <Clock size={15} className="shrink-0" /> Video removed after 2 years
+            {!message.text && <span className="ml-1 not-italic">{meta}</span>}
+          </p>
+        )}
         {message.type === 'audio' && (
           <>
             <VoiceNote message={message} mine={mine} upload={upload} />

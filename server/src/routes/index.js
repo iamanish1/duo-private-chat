@@ -36,6 +36,8 @@ router.get('/messages', validate({ query: schemas.listMessagesQuery }), messages
 router.post('/messages', validate({ body: schemas.sendMessageBody }), messages.create);
 router.get('/messages/search', validate({ query: schemas.searchQuery }), messages.search);
 router.get('/messages/media', validate({ query: schemas.mediaListQuery }), messages.media);
+router.get('/messages/expiring', messages.expiring);
+router.put('/messages/:id/keep', validate({ params: schemas.idParams, body: schemas.keepBody }), messages.keep);
 router.patch('/messages/:id/read', validate({ params: schemas.idParams }), messages.markRead);
 router.put('/messages/:id/reaction', validate({ params: schemas.idParams, body: schemas.reactionBody }), messages.react);
 router.patch('/messages/:id', validate({ params: schemas.idParams, body: schemas.editMessageBody }), messages.edit);

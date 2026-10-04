@@ -68,3 +68,6 @@ export function formatAgo(value, now = new Date()) {
   const day = formatDayLabel(value, now);
   return `${day === 'Today' ? 'Today' : 'Yesterday'} at ${formatTime(value)}`;
 }
+
+/** "12 Oct 2028" — for dates in the future (e.g. when a video will be removed). */
+export const formatDate = (value) => fullDateFormat.format(new Date(value));

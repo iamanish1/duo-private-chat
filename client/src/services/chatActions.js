@@ -245,6 +245,21 @@ export async function editMessage(message, text) {
   }
 }
 
+/** "Keep forever": protect a video from the automatic 2-year clean-up. */
+export async function keepMessage(message, keep) {
+  store().upsert({ ...message, kept: keep, mediaRemovesAt: keep ? null : message.mediaRemovesAt });
+  try {
+    const { message: updated } = await chatApi.keep(message.id, keep);
+    store().upsert(updated);
+    toast.show(keep ? 'Kept forever — it won’t be removed' : 'No longer kept forever');
+    return updated;
+  } catch (err) {
+    store().upsert(message);
+    toast.error(err.message);
+    return null;
+  }
+}
+
 export async function deleteMessage(message) {
   try {
     const { message: updated } = await chatApi.remove(message.id);

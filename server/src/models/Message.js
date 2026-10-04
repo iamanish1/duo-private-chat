@@ -62,6 +62,10 @@ const messageSchema = new mongoose.Schema(
     deletedAt: { type: Date, default: null },
     // Set when the sender corrected the text (shown as "edited").
     editedAt: { type: Date, default: null },
+    // "Keep forever": exempt from the automatic removal of old videos.
+    keptAt: { type: Date, default: null },
+    // The file was removed after the retention period; the message stays.
+    mediaExpiredAt: { type: Date, default: null },
   },
   { timestamps: true },
 );

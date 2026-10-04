@@ -55,6 +55,9 @@ const schema = z.object({
   MEDIA_MAX_VOICE_MB: intWithDefault(15),
   MEDIA_MAX_VOICE_SECONDS: intWithDefault(300),
   MEDIA_MAX_SONG_MB: intWithDefault(50),
+  // Chat videos older than this are removed from storage (0 = keep forever).
+  MEDIA_RETENTION_DAYS: intWithDefault(730),
+  MEDIA_RETENTION_REMINDER_DAYS: intWithDefault(30),
 
   VAPID_PUBLIC_KEY: optionalString,
   VAPID_PRIVATE_KEY: optionalString,
@@ -142,6 +145,9 @@ function buildConfig() {
       maxVoiceBytes: env.MEDIA_MAX_VOICE_MB * 1024 * 1024,
       maxVoiceSeconds: env.MEDIA_MAX_VOICE_SECONDS,
       maxSongBytes: env.MEDIA_MAX_SONG_MB * 1024 * 1024,
+      retentionDays: env.MEDIA_RETENTION_DAYS,
+      retentionReminderDays: env.MEDIA_RETENTION_REMINDER_DAYS,
+      retentionTypes: ['video'],
     },
     push: {
       publicKey: env.VAPID_PUBLIC_KEY,

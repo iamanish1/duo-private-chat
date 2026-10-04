@@ -39,6 +39,17 @@ export async function react(req, res) {
   res.json({ message: serializeMessage(message) });
 }
 
+export async function keep(req, res) {
+  const message = await messages.setKeep(req.session, req.valid.params.id, req.valid.body.keep);
+  publishUpdated(req.session, message);
+  res.json({ message: serializeMessage(message) });
+}
+
+export async function expiring(req, res) {
+  const list = await messages.listExpiring(conversationOf(req));
+  res.json({ messages: list.map(serializeMessage) });
+}
+
 export async function search(req, res) {
   const result = await messages.searchMessages(conversationOf(req), req.valid.query);
   res.json({ messages: result.messages.map(serializeMessage), hasMore: result.hasMore });

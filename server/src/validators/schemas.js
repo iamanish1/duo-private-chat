@@ -47,6 +47,8 @@ export const statusUploadBody = z.object({
 
 export const reactionBody = z.object({ emoji: emoji.nullable() });
 
+export const keepBody = z.object({ keep: z.boolean() });
+
 export const editMessageBody = z.object({
   text: z.string().max(4000, 'Messages can be up to 4000 characters'),
 });

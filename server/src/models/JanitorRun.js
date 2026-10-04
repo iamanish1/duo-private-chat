@@ -6,6 +6,8 @@ const janitorRunSchema = new mongoose.Schema({
   statusesRemoved: { type: Number, default: 0 },
   trashRetried: { type: Number, default: 0 },
   trashCleared: { type: Number, default: 0 },
+  mediaExpired: { type: Number, default: 0 },
+  mediaBytesFreed: { type: Number, default: 0 },
   orphanScan: { type: Boolean, default: false },
   filesChecked: { type: Number, default: 0 },
   orphansDeleted: { type: Number, default: 0 },
