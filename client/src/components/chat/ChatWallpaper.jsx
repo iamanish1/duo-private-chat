@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { resolveUrl } from '../../utils/url';
 
@@ -31,6 +32,59 @@ export function presetBackground(wallpaper, theme) {
   return preset ? preset[theme === 'dark' ? 'dark' : 'light'] : null;
 }
 
+// How different the photo and screen shapes may be before we stop cropping.
+const MISMATCH_RATIO = 1.3;
+
+/**
+ * A photo background. When its shape roughly matches the chat area (a
+ * portrait photo on a phone) it fills it. When it doesn't (a portrait photo
+ * on a wide laptop screen), "fill" would zoom in 2–3× and cut most of it off,
+ * so the whole photo is shown instead, over a soft blurred copy of itself.
+ */
+function PhotoWallpaper({ url, dim, className }) {
+  const ref = useRef(null);
+  const [photoAspect, setPhotoAspect] = useState(null);
+  const [boxAspect, setBoxAspect] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    const img = new Image();
+    img.onload = () => active && img.naturalHeight && setPhotoAspect(img.naturalWidth / img.naturalHeight);
+    img.src = url;
+    return () => {
+      active = false;
+    };
+  }, [url]);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    const measure = () => el.clientHeight && setBoxAspect(el.clientWidth / el.clientHeight);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const mismatch = photoAspect && boxAspect ? Math.max(photoAspect / boxAspect, boxAspect / photoAspect) : 1;
+  const fit = mismatch > MISMATCH_RATIO;
+  const image = { backgroundImage: `url("${url}")` };
+
+  return (
+    <div ref={ref} className={`${className} overflow-hidden bg-canvas`} aria-hidden="true" data-fit={fit ? 'contain' : 'cover'}>
+      {fit ? (
+        <>
+          <div className="absolute -inset-10 scale-110 bg-cover bg-center opacity-80 blur-2xl" style={image} />
+          <div className="absolute inset-0 bg-contain bg-center bg-no-repeat" style={image} />
+        </>
+      ) : (
+        <div className="absolute inset-0 bg-cover bg-center" style={image} />
+      )}
+      <div className="absolute inset-0 bg-black" style={{ opacity: dim / 100 }} />
+    </div>
+  );
+}
+
 /**
  * The shared chat background, drawn as a fixed layer behind the messages
  * (so a photo doesn't scroll away). `imageUrl` may be a local preview.
@@ -38,14 +92,7 @@ export function presetBackground(wallpaper, theme) {
 export function ChatWallpaper({ wallpaper, className = 'absolute inset-0' }) {
   const { resolved } = useTheme();
   if (!wallpaper || wallpaper.kind === 'default') return <div className={`chat-backdrop ${className}`} aria-hidden="true" />;
-  if (wallpaper.kind === 'photo' && wallpaper.imageUrl) {
-    return (
-      <div className={`${className} overflow-hidden bg-canvas`} aria-hidden="true">
-        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url("${resolveUrl(wallpaper.imageUrl)}")` }} />
-        <div className="absolute inset-0 bg-black" style={{ opacity: (wallpaper.dim ?? 0) / 100 }} />
-      </div>
-    );
-  }
+  if (wallpaper.kind === 'photo' && wallpaper.imageUrl) return <PhotoWallpaper url={resolveUrl(wallpaper.imageUrl)} dim={wallpaper.dim ?? 0} className={className} />;
   const background = presetBackground(wallpaper, resolved);
   if (!background) return <div className={`chat-backdrop ${className}`} aria-hidden="true" />;
   return <div className={className} style={{ background }} aria-hidden="true" />;
