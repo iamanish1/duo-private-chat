@@ -49,6 +49,13 @@ export const reactionBody = z.object({ emoji: emoji.nullable() });
 
 export const keepBody = z.object({ keep: z.boolean() });
 
+// Chat background: a preset id from the client's palette, or (for a photo) just the dimming.
+export const wallpaperBody = z.object({
+  kind: z.enum(['default', 'color', 'gradient', 'photo']),
+  value: z.string().regex(/^[a-z0-9-]{1,40}$/, 'Unknown background').nullable().optional(),
+  dim: z.number().int().min(0).max(80).default(0),
+});
+
 export const editMessageBody = z.object({
   text: z.string().max(4000, 'Messages can be up to 4000 characters'),
 });

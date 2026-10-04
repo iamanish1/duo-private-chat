@@ -5,7 +5,7 @@ import { loginLimiter, pinLimiter, uploadLimiter } from '../middleware/security.
 import { avatarUpload, messageUpload, songUpload } from '../middleware/upload.js';
 import * as schemas from '../validators/schemas.js';
 import * as auth from '../controllers/authController.js';
-import { getConversation } from '../controllers/conversationController.js';
+import { getConversation, setWallpaper, uploadWallpaper } from '../controllers/conversationController.js';
 import * as messages from '../controllers/messageController.js';
 import * as media from '../controllers/mediaController.js';
 import * as users from '../controllers/userController.js';
@@ -31,6 +31,8 @@ router.post('/auth/logout-all', requireAuth, auth.logoutEverywhere);
 router.use(requireAuth);
 
 router.get('/conversation', getConversation);
+router.put('/conversation/wallpaper', validate({ body: schemas.wallpaperBody }), setWallpaper);
+router.post('/conversation/wallpaper/photo', uploadLimiter, avatarUpload, uploadWallpaper);
 
 router.get('/messages', validate({ query: schemas.listMessagesQuery }), messages.list);
 router.post('/messages', validate({ body: schemas.sendMessageBody }), messages.create);

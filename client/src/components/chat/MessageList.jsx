@@ -1,4 +1,5 @@
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { ChatWallpaper } from './ChatWallpaper';
 import { ChevronDown } from 'lucide-react';
 import { MessageBubble } from './MessageBubble';
 import { DateDivider } from './DateDivider';
@@ -16,6 +17,7 @@ export function MessageList({ onActions, onOpenMedia, jumpRequest, onJump }) {
   const messages = useChatStore((s) => s.messages);
   const me = useChatStore((s) => s.me);
   const peer = useChatStore((s) => s.peer);
+  const wallpaper = useChatStore((s) => s.wallpaper);
   const hasMore = useChatStore((s) => s.hasMore);
   const loadingOlder = useChatStore((s) => s.loadingOlder);
   const peerTyping = useChatStore((s) => s.peerTyping);
@@ -122,7 +124,8 @@ export function MessageList({ onActions, onOpenMedia, jumpRequest, onJump }) {
 
   return (
     <div className="relative min-h-0 flex-1">
-      <div ref={scrollRef} onScroll={onScroll} className="scroll-area chat-backdrop absolute inset-0 [overflow-anchor:none]">
+      <ChatWallpaper wallpaper={wallpaper} />
+      <div ref={scrollRef} onScroll={onScroll} className="scroll-area absolute inset-0 [overflow-anchor:none]">
         <div className="mx-auto flex min-h-full max-w-3xl flex-col pb-2">
           <div ref={topSentinel} className="h-px" />
           {loadingOlder && (

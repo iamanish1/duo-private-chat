@@ -62,6 +62,9 @@ export const authApi = {
 
 export const chatApi = {
   conversation: () => data(api.get('/conversation')),
+  setWallpaper: (body) => data(api.put('/conversation/wallpaper', body)),
+  uploadWallpaper: (formData, { onProgress } = {}) =>
+    data(api.post('/conversation/wallpaper/photo', formData, { timeout: 0, onUploadProgress: (e) => e.total && onProgress?.(e.loaded / e.total) })),
   messages: (params) => data(api.get('/messages', { params })),
   send: (body) => data(api.post('/messages', body)),
   markRead: (id) => data(api.patch(`/messages/${id}/read`)),

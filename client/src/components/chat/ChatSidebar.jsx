@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CircleDashed, Headphones, History, Images, Phone, Popcorn, Search, Settings, ShieldCheck, UserRound, Video } from 'lucide-react';
+import { CircleDashed, Headphones, History, Images, Paintbrush, Phone, Popcorn, Search, Settings, ShieldCheck, UserRound, Video } from 'lucide-react';
 import { Link } from 'react-router';
 import { PresenceLine } from './ChatHeader';
 import { PeerAvatar } from './PeerAvatar';
@@ -14,6 +14,7 @@ const LINKS = [
   { to: '/status', icon: CircleDashed, label: 'Status' },
   { to: '/media', icon: Images, label: 'Photos & videos' },
   { to: '/search', icon: Search, label: 'Search messages' },
+  { to: '/wallpaper', icon: Paintbrush, label: 'Chat background' },
   { to: '/calls', icon: History, label: 'Call history' },
   { to: '/settings', icon: UserRound, label: 'Your profile' },
   { to: '/settings', icon: Settings, label: 'Settings' },

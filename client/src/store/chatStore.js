@@ -21,7 +21,9 @@ export const useChatStore = create((set) => ({
   ...initialState,
 
   reset: () => set(initialState),
-  setBootstrap: ({ me, peer, conversation }) => set({ me, peer, conversationId: conversation.id }),
+  setBootstrap: ({ me, peer, conversation }) => set({ me, peer, conversationId: conversation.id, wallpaper: conversation.wallpaper ?? null }),
+  // Shared chat background (both people see it, either can change it).
+  setWallpaper: (wallpaper) => set({ wallpaper }),
   setStatus: (status, error = null) => set({ status, error }),
   setMessages: (messages, hasMore) => set((s) => ({ messages: mergeMessages(s.messages.filter(isPending), messages), hasMore })),
   prependOlder: (messages, hasMore) => set((s) => ({ messages: mergeMessages(s.messages, messages), hasMore, loadingOlder: false })),

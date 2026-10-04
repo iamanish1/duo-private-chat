@@ -6,6 +6,7 @@ import { refreshWatch, watchSocketHandlers } from '../services/watchActions';
 import { musicSocketHandlers, refreshListening } from '../services/musicActions';
 import { ensurePushSubscription, getPushEndpoint, onPushEndpointChange, showLocalNotification } from '../services/push';
 import { useChatStore } from '../store/chatStore';
+import { toast } from '../store/toastStore';
 import { APP_NAME } from '../config';
 import { playMessageChime } from '../utils/sounds';
 
@@ -103,6 +104,11 @@ export function useRealtime({ onSessionEnded }) {
         store().setPeerTyping(false);
       },
       'presence:state': ({ peer }) => store().setPeer(peer),
+      'conversation:wallpaper': ({ wallpaper, by }) => {
+        store().setWallpaper(wallpaper);
+        const { peer } = store();
+        if (by === peer?.id) toast.show(`${peer.name} changed the chat background`);
+      },
       'user:updated': (user) => (user.id === store().peer?.id ? store().setPeer(user) : store().setMe(user)),
       ...statusSocketHandlers,
       ...watchSocketHandlers,

@@ -1,4 +1,4 @@
-import { ChevronRight, CircleDashed, Headphones, History, Images, Moon, Popcorn, Search, Settings, Sun } from 'lucide-react';
+import { ChevronRight, CircleDashed, Headphones, History, Images, Moon, Paintbrush, Popcorn, Search, Settings, Sun } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { BottomSheet, SheetAction } from '../common/BottomSheet';
 import { Avatar } from '../common/Avatar';
@@ -31,6 +31,7 @@ export function ChatMenuSheet({ open, onClose }) {
       <SheetAction icon={Popcorn} label="Watch together" description="YouTube, in sync, while you talk" onClick={go('/watch')} />
       <SheetAction icon={Headphones} label="Listen together" description="Your songs and playlists, in sync" onClick={go('/music')} />
       <SheetAction icon={Images} label="Photos & videos" onClick={go('/media')} />
+      <SheetAction icon={Paintbrush} label="Chat background" description="Shared — you both see it" onClick={go('/wallpaper')} />
       <SheetAction icon={Search} label="Search messages" onClick={go('/search')} />
       <SheetAction icon={History} label="Call history" onClick={go('/calls')} />
       <SheetAction

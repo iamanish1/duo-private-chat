@@ -1,4 +1,4 @@
-import { JanitorRun, MediaTrash, Message, Song, Status, User } from '../models/index.js';
+import { Conversation, JanitorRun, MediaTrash, Message, Song, Status, User } from '../models/index.js';
 import { logger } from '../utils/logger.js';
 import { storage } from './storage/index.js';
 import { sweepExpiredStatuses } from './statusService.js';
@@ -23,6 +23,7 @@ export async function referencedKeys() {
     User.distinct('avatar.key'),
     Song.distinct('audio.key'),
     Song.distinct('coverKey'),
+    Conversation.distinct('wallpaper.imageKey'),
   ]);
   return new Set(lists.flat().filter(Boolean));
 }
