@@ -24,7 +24,10 @@ export function VideoPlayer({ src, poster, caption, onClose }) {
           <X size={22} />
         </IconButton>
       </div>
-      <div className="flex flex-1 items-center justify-center">
+      {/* The video fits inside this box, whichever side runs out first, so a tall
+          phone video on a wide laptop shows whole (black bars at the sides)
+          instead of being sized to the width and overflowing the screen. */}
+      <div className="relative min-h-0 flex-1">
         <video
           ref={videoRef}
           src={resolveUrl(src)}
@@ -32,7 +35,7 @@ export function VideoPlayer({ src, poster, caption, onClose }) {
           controls
           playsInline
           preload="metadata"
-          className="max-h-full w-full max-w-full"
+          className="absolute inset-0 size-full object-contain"
         />
       </div>
       {caption && <p className="mx-auto max-w-2xl px-6 pt-3 pb-[calc(var(--safe-bottom)+20px)] text-center text-[15px] text-white/90">{caption}</p>}
