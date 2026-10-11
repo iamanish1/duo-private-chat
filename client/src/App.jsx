@@ -22,6 +22,8 @@ const Status = lazy(() => import('./pages/Status'));
 const Watch = lazy(() => import('./pages/Watch'));
 const Music = lazy(() => import('./pages/Music'));
 const Wallpaper = lazy(() => import('./pages/Wallpaper'));
+const Together = lazy(() => import('./pages/Together'));
+const Lists = lazy(() => import('./pages/Lists'));
 
 function Splash() {
   return (
@@ -74,6 +76,8 @@ function AppRoutes() {
         <Route path="watch" element={<Watch />} />
         <Route path="music" element={<Music />} />
         <Route path="wallpaper" element={<Wallpaper />} />
+        <Route path="together" element={<Together />} />
+        <Route path="lists" element={<Lists />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

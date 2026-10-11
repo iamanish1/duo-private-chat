@@ -5,6 +5,7 @@ import { loadStatuses, statusSocketHandlers } from '../services/statusActions';
 import { refreshWatch, watchSocketHandlers } from '../services/watchActions';
 import { musicSocketHandlers, refreshListening } from '../services/musicActions';
 import { loadStickers, stickerSocketHandlers } from '../services/stickerActions';
+import { closeSocketHandlers, loadLists, loadTogether } from '../services/closeActions';
 import { ensurePushSubscription, getPushEndpoint, onPushEndpointChange, showLocalNotification } from '../services/push';
 import { useChatStore } from '../store/chatStore';
 import { toast } from '../store/toastStore';
@@ -69,6 +70,8 @@ export function useRealtime({ onSessionEnded }) {
         refreshWatch();
         refreshListening();
         loadStickers();
+        loadTogether();
+        loadLists();
       },
       disconnect: (reason) => {
         store().setPeerTyping(false);
@@ -116,6 +119,7 @@ export function useRealtime({ onSessionEnded }) {
       ...watchSocketHandlers,
       ...musicSocketHandlers,
       ...stickerSocketHandlers,
+      ...closeSocketHandlers,
       'session:revoked': () => onSessionEnded('You were signed out on all devices.'),
       'session:expired': () => onSessionEnded('Your session expired. Please sign in again.'),
     };

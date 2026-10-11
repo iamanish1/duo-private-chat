@@ -1,4 +1,5 @@
-import { ChevronRight, CircleDashed, Headphones, History, Images, Moon, Paintbrush, Popcorn, Search, Settings, Sun } from 'lucide-react';
+import { CalendarHeart, ChevronRight, CircleDashed, Headphones, History, Images, ListChecks, Moon, Paintbrush, Popcorn, Search, Settings, Sun } from 'lucide-react';
+import { daysBetween, todayLocal, useCloseStore } from '../../services/closeActions';
 import { useNavigate } from 'react-router';
 import { BottomSheet, SheetAction } from '../common/BottomSheet';
 import { Avatar } from '../common/Avatar';
@@ -11,6 +12,8 @@ export function ChatMenuSheet({ open, onClose }) {
   const me = useChatStore((s) => s.me);
   const peer = useChatStore((s) => s.peer);
   const unseen = useStatusesOf(peer?.id).filter((s) => !s.viewedAt).length;
+  const since = useCloseStore((s) => s.together.since);
+  const daysTogether = since ? daysBetween(since, todayLocal()) : null;
   const { resolved, setPreference } = useTheme();
   const go = (path) => () => {
     onClose();
@@ -28,6 +31,8 @@ export function ChatMenuSheet({ open, onClose }) {
         <ChevronRight size={20} className="text-muted" />
       </button>
       <SheetAction icon={CircleDashed} label="Status" description={unseen ? `${unseen} new from ${peer?.name}` : 'Share an update for 24 hours'} onClick={go('/status')} />
+      <SheetAction icon={CalendarHeart} label="Together" description={daysTogether >= 0 && daysTogether !== null ? `❤️ ${daysTogether.toLocaleString()} days together` : 'Days together & countdowns'} onClick={go('/together')} />
+      <SheetAction icon={ListChecks} label="Our lists" description="Bucket list, movies, date ideas…" onClick={go('/lists')} />
       <SheetAction icon={Popcorn} label="Watch together" description="YouTube, in sync, while you talk" onClick={go('/watch')} />
       <SheetAction icon={Headphones} label="Listen together" description="Your songs and playlists, in sync" onClick={go('/music')} />
       <SheetAction icon={Images} label="Photos & videos" onClick={go('/media')} />

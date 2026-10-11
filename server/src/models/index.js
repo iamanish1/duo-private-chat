@@ -7,6 +7,7 @@ export { PushLog } from './PushLog.js';
 export { Status, STATUS_TYPES } from './Status.js';
 export { Song } from './Song.js';
 export { Sticker } from './Sticker.js';
+export { SharedList } from './SharedList.js';
 export { Playlist } from './Playlist.js';
 export { MediaTrash } from './MediaTrash.js';
 export { JanitorRun } from './JanitorRun.js';

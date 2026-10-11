@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Camera, Check, Keyboard, Mic, Paperclip, SendHorizontal, Smile } from 'lucide-react';
+import { Camera, Check, Heart, Keyboard, Mic, Paperclip, SendHorizontal, Smile } from 'lucide-react';
+import { sendHeart } from '../../services/closeActions';
 import { IconButton } from '../common/IconButton';
 import { ExpressionPanel } from '../stickers/ExpressionPanel';
 import { ReplyBar } from './ReplyBar';
@@ -206,6 +207,11 @@ export function Composer({ onFirstSend }) {
         <IconButton label={emojiOpen ? 'Show keyboard' : 'Emoji, stickers & GIFs'} variant="muted" onClick={toggleEmoji}>
           {emojiOpen ? <Keyboard size={22} /> : <Smile size={22} />}
         </IconButton>
+        {!hasText && !editing && (
+          <IconButton label="Send a heart — thinking of you" variant="muted" onClick={sendHeart} disabled={!ready} className="text-accent! hover:text-accent-strong!">
+            <Heart size={21} />
+          </IconButton>
+        )}
 
         <div className="flex min-h-11 flex-1 items-end rounded-[22px] border border-line bg-surface transition focus-within:border-accent/50">
           <textarea

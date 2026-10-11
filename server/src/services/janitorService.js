@@ -3,6 +3,7 @@ import { logger } from '../utils/logger.js';
 import { storage } from './storage/index.js';
 import { sweepExpiredStatuses } from './statusService.js';
 import { expireOldMedia } from './messageService.js';
+import { sendDueReminders } from './togetherService.js';
 
 // Storage janitor: keeps the database and object storage lean.
 //  - hourly: delete expired statuses (+ files) and retry failed deletions
@@ -80,6 +81,8 @@ export async function runJanitor({ forceOrphanScan = false } = {}) {
   if (running) return null;
   running = true;
   try {
+    // Countdown reminders ride along with the hourly run (sent once a day after 9 AM).
+    await sendDueReminders().catch((err) => logger.warn('Reminders failed', { message: err.message }));
     const result = { statusesRemoved: await sweepExpiredStatuses(), ...(await expireOldMedia()), ...(await emptyTrash()) };
     const lastScan = await JanitorRun.findOne({ orphanScan: true }).sort({ at: -1 }).lean();
     if (forceOrphanScan || !lastScan || Date.now() - lastScan.at.getTime() > ORPHAN_SCAN_EVERY_MS) {

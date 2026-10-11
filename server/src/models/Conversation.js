@@ -13,6 +13,28 @@ const conversationSchema = new mongoose.Schema(
     // Unique constant: the database itself refuses a second conversation.
     singleton: { type: String, default: 'primary', enum: ['primary'], unique: true, immutable: true },
     lastMessageAt: { type: Date, default: null },
+    // Days together & countdowns (calendar days like "2025-02-14").
+    together: {
+      type: new mongoose.Schema(
+        {
+          since: { type: String, default: null },
+          events: {
+            type: [
+              new mongoose.Schema({
+                title: { type: String, required: true, trim: true, maxlength: 60 },
+                date: { type: String, required: true },
+                kind: { type: String, enum: ['birthday', 'anniversary', 'meetup', 'other'], default: 'other' },
+                yearly: { type: Boolean, default: false },
+              }),
+            ],
+            default: [],
+          },
+          lastReminderDay: { type: String, default: null },
+        },
+        { _id: false },
+      ),
+      default: undefined,
+    },
     // Shared chat background — both people see it, either can change it.
     wallpaper: {
       type: new mongoose.Schema(

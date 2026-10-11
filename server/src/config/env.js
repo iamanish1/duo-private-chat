@@ -78,6 +78,8 @@ const schema = z.object({
   CLOUDFLARE_TURN_KEY_ID: optionalString,
   // GIF search (free key from developers.giphy.com). Without it the GIF tab explains how to enable it.
   GIPHY_API_KEY: optionalString,
+  // Countdown reminders go out after 9 AM in this time zone.
+  REMINDER_TIME_ZONE: z.preprocess(emptyToUndefined, z.string().default('Asia/Kolkata')),
   CLOUDFLARE_TURN_API_TOKEN: optionalString,
 
   SMTP_HOST: optionalString,
@@ -158,6 +160,7 @@ function buildConfig() {
       enabled: Boolean(env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY),
     },
     giphyApiKey: env.GIPHY_API_KEY,
+    reminderTimeZone: env.REMINDER_TIME_ZONE,
     webrtc: {
       stunUrls: csv(env.STUN_URLS),
       turnUrls: csv(env.TURN_SERVER_URL),

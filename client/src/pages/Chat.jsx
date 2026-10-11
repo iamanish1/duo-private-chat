@@ -14,6 +14,7 @@ import { MediaViewer } from '../components/media/MediaViewer';
 import { NotificationPrompt } from '../components/notifications/NotificationPrompt';
 import { DuoCodeReminder } from '../components/settings/DuoCodeReminder';
 import { ExpiringMediaReminder } from '../components/media/ExpiringMediaReminder';
+import { TodayBanner } from '../components/close/TodayBanner';
 import { StateScreen } from '../components/common/StateScreen';
 import { useChatStore } from '../store/chatStore';
 import { isInCall, useCallStore } from '../store/callStore';
@@ -72,6 +73,7 @@ export default function Chat() {
         <NowPlayingBar />
         {status === 'ready' && <DuoCodeReminder />}
         {status === 'ready' && <ExpiringMediaReminder />}
+        {status === 'ready' && <TodayBanner />}
         {status === 'ready' && <NotificationPrompt peerName={peer?.name} visible={promptVisible} />}
 
         {status === 'error' ? (

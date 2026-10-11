@@ -6,6 +6,7 @@ import { loadConversation } from '../services/chatActions';
 import { CallLayer } from '../components/calls/CallLayer';
 import { StatusViewerHost } from '../components/status/StatusViewer';
 import { ProfilePhotoViewerHost } from '../components/common/ProfilePhotoViewer';
+import { HeartsOverlay } from '../components/close/HeartsOverlay';
 import { WatchInviteBanner } from '../components/watch/WatchInviteBanner';
 import { ListenEngine } from '../components/music/ListenEngine';
 import { ListenInviteBanner } from '../components/music/ListenInviteBanner';
@@ -39,6 +40,7 @@ export function ChatProvider({ children }) {
       {children}
       <StatusViewerHost />
       <ProfilePhotoViewerHost />
+      <HeartsOverlay />
       <WatchInviteBanner />
       <ListenInviteBanner />
       <ListenEngine />

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { CircleDashed, Headphones, History, Images, Paintbrush, Phone, Popcorn, Search, Settings, ShieldCheck, UserRound, Video } from 'lucide-react';
+import { CalendarHeart, CircleDashed, Headphones, History, Images, ListChecks, Paintbrush, Phone, Popcorn, Search, Settings, ShieldCheck, UserRound, Video } from 'lucide-react';
+import { daysBetween, todayLocal, useCloseStore } from '../../services/closeActions';
 import { Link } from 'react-router';
 import { PresenceLine } from './ChatHeader';
 import { PeerAvatar } from './PeerAvatar';
@@ -9,6 +10,8 @@ import { chatApi } from '../../services/api';
 import { resolveUrl } from '../../utils/url';
 
 const LINKS = [
+  { to: '/together', icon: CalendarHeart, label: 'Together' },
+  { to: '/lists', icon: ListChecks, label: 'Our lists' },
   { to: '/watch', icon: Popcorn, label: 'Watch together' },
   { to: '/music', icon: Headphones, label: 'Listen together' },
   { to: '/status', icon: CircleDashed, label: 'Status' },
@@ -24,6 +27,8 @@ const LINKS = [
 export function ChatSidebar({ onCall, onOpenMedia, callDisabled }) {
   const peer = useChatStore((s) => s.peer);
   const typing = useChatStore((s) => s.peerTyping);
+  const since = useCloseStore((s) => s.together.since);
+  const daysTogether = since ? daysBetween(since, todayLocal()) : null;
   const mediaCount = useChatStore((s) => s.messages.filter((m) => m.type !== 'text' && m.id && !m.deleted).length);
   const now = useNow();
   const [recent, setRecent] = useState([]);
@@ -45,6 +50,11 @@ export function ChatSidebar({ onCall, onOpenMedia, callDisabled }) {
           <p className="mt-1 text-sm text-muted">
             <PresenceLine peer={peer} typing={typing} now={now} />
           </p>
+          {daysTogether !== null && daysTogether >= 0 && (
+            <Link to="/together" className="mt-2 rounded-full bg-accent-soft px-3 py-1 text-xs font-semibold text-accent-strong">
+              ❤️ {daysTogether.toLocaleString()} days together
+            </Link>
+          )}
           <div className="mt-5 flex gap-2">
             <button type="button" onClick={() => onCall('audio')} disabled={callDisabled} className="flex items-center gap-2 rounded-full bg-surface-2 px-5 py-2.5 text-sm font-semibold text-ink shadow-soft transition hover:brightness-95 disabled:opacity-50">
               <Phone size={17} /> Voice call

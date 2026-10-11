@@ -14,6 +14,7 @@ import * as calls from '../controllers/callController.js';
 import * as statuses from '../controllers/statusController.js';
 import * as music from '../controllers/musicController.js';
 import * as stickers from '../controllers/stickerController.js';
+import * as close from '../controllers/togetherController.js';
 
 export const router = Router();
 
@@ -80,6 +81,20 @@ router.get('/stickers', stickers.list);
 router.post('/stickers', uploadLimiter, avatarUpload, stickers.create);
 router.delete('/stickers/:id', validate({ params: schemas.idParams }), stickers.remove);
 router.get('/gifs', validate({ query: schemas.gifQuery }), stickers.gifs);
+
+router.post('/nudge', close.nudge);
+router.get('/together', close.getTogether);
+router.put('/together/since', validate({ body: schemas.sinceBody }), close.setSince);
+router.post('/together/events', validate({ body: schemas.eventBody }), close.addEvent);
+router.patch('/together/events/:id', validate({ params: schemas.idParams, body: schemas.eventUpdateBody }), close.updateEvent);
+router.delete('/together/events/:id', validate({ params: schemas.idParams }), close.removeEvent);
+router.get('/lists', close.getLists);
+router.post('/lists', validate({ body: schemas.listBody }), close.createList);
+router.patch('/lists/:id', validate({ params: schemas.idParams, body: schemas.listUpdateBody }), close.updateList);
+router.delete('/lists/:id', validate({ params: schemas.idParams }), close.deleteList);
+router.post('/lists/:id/items', validate({ params: schemas.idParams, body: schemas.listItemBody }), close.addItem);
+router.patch('/lists/:id/items/:itemId', validate({ params: schemas.listItemParams, body: schemas.listItemUpdateBody }), close.updateItem);
+router.delete('/lists/:id/items/:itemId', validate({ params: schemas.listItemParams }), close.removeItem);
 
 router.get('/calls', validate({ query: schemas.callsQuery }), calls.history);
 router.get('/calls/ice-servers', calls.iceServers);

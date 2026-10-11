@@ -64,6 +64,28 @@ export const reactionBody = z.object({ emoji: emoji.nullable() });
 
 export const keepBody = z.object({ keep: z.boolean() });
 
+const calendarDay = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Pick a date')
+  .refine((d) => !Number.isNaN(Date.parse(`${d}T00:00:00Z`)) && new Date(`${d}T00:00:00Z`).toISOString().slice(0, 10) === d, 'Pick a valid date');
+
+export const sinceBody = z.object({ since: calendarDay.nullable() });
+export const eventBody = z.object({
+  title: z.string().trim().min(1, 'Give it a name').max(60),
+  date: calendarDay,
+  kind: z.enum(['birthday', 'anniversary', 'meetup', 'other']).default('other'),
+  yearly: z.boolean().default(false),
+});
+export const eventUpdateBody = eventBody.partial().refine((b) => Object.keys(b).length > 0, 'Nothing to change');
+
+export const listBody = z.object({ name: z.string().trim().min(1, 'Give the list a name').max(60), emoji: z.string().max(16).optional() });
+export const listUpdateBody = listBody.partial().refine((b) => Object.keys(b).length > 0, 'Nothing to change');
+export const listItemBody = z.object({ text: z.string().trim().min(1, 'Write something').max(200) });
+export const listItemUpdateBody = z
+  .object({ text: z.string().trim().min(1).max(200).optional(), done: z.boolean().optional() })
+  .refine((b) => b.text !== undefined || b.done !== undefined, 'Nothing to change');
+export const listItemParams = z.object({ id: objectId, itemId: objectId });
+
 export const gifQuery = z.object({
   q: z.string().trim().max(60).optional(),
   offset: z.coerce.number().int().min(0).max(4999).optional(),
