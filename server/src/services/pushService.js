@@ -81,7 +81,7 @@ export async function sendToUser(userId, payload, { ttl = 60 * 60, urgency = 'no
   return { sent };
 }
 
-const MEDIA_LABEL = { image: '📷 Photo', video: '🎥 Video', audio: '🎤 Voice message' };
+const MEDIA_LABEL = { image: '📷 Photo', video: '🎥 Video', audio: '🎤 Voice message', sticker: '✨ Sticker' };
 
 /** Builds a notification that reveals only what the recipient opted into. */
 export function buildMessageNotification({ sender, message, preview }) {
@@ -91,7 +91,7 @@ export function buildMessageNotification({ sender, message, preview }) {
     const body = message.text ? message.text.slice(0, 140) : MEDIA_LABEL[message.type] || 'New message';
     return { ...base, title: sender.name, body };
   }
-  const what = { text: 'a message', image: 'a photo', video: 'a video', audio: 'a voice message' }[message.type] ?? 'a message';
+  const what = { text: 'a message', image: 'a photo', video: 'a video', audio: 'a voice message', sticker: message.sticker?.kind === 'gif' ? 'a GIF' : 'a sticker' }[message.type] ?? 'a message';
   return { ...base, title: sender.name, body: `Sent you ${what}` };
 }
 

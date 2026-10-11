@@ -93,6 +93,14 @@ function mediaRemovalDate(message, deleted) {
   return new Date(new Date(message.createdAt).getTime() + retentionDays * DAY_MS);
 }
 
+function serializeStickerPart(sticker) {
+  if (!sticker?.kind) return null;
+  const base = { kind: sticker.kind, width: sticker.width ?? null, height: sticker.height ?? null };
+  if (sticker.kind === 'emoji') return { ...base, code: sticker.code };
+  if (sticker.kind === 'gif') return { ...base, gifId: sticker.gifId, url: sticker.url, title: sticker.title || '' };
+  return { ...base, url: sticker.key ? storage.url(sticker.key, { resourceType: 'image', variant: 'thumb' }) : null };
+}
+
 export function serializeMessage(message) {
   const deleted = Boolean(message.deletedAt);
   return {
@@ -107,6 +115,7 @@ export function serializeMessage(message) {
     // Kept flat as well for consumers that only need the URLs.
     mediaUrl: deleted || !message.media ? null : storage.url(message.media.key, { resourceType: message.media.resourceType, mimeType: message.media.mimeType }),
     replyTo: serializeReply(message.replyTo),
+    sticker: deleted ? null : serializeStickerPart(message.sticker),
     statusReply: deleted ? null : serializeStatusReply(message),
     reactions: (message.reactions || []).map((r) => ({ userId: id(r.userId), emoji: r.emoji })),
     status: message.status,

@@ -13,6 +13,7 @@ import * as notifications from '../controllers/notificationController.js';
 import * as calls from '../controllers/callController.js';
 import * as statuses from '../controllers/statusController.js';
 import * as music from '../controllers/musicController.js';
+import * as stickers from '../controllers/stickerController.js';
 
 export const router = Router();
 
@@ -74,6 +75,11 @@ router.patch('/music/playlists/:id', validate({ params: schemas.idParams, body: 
 router.delete('/music/playlists/:id', validate({ params: schemas.idParams }), music.deletePlaylist);
 router.post('/music/playlists/:id/songs', validate({ params: schemas.idParams, body: schemas.playlistSongBody }), music.addToPlaylist);
 router.delete('/music/playlists/:id/songs/:songId', validate({ params: schemas.playlistSongParams }), music.removeFromPlaylist);
+
+router.get('/stickers', stickers.list);
+router.post('/stickers', uploadLimiter, avatarUpload, stickers.create);
+router.delete('/stickers/:id', validate({ params: schemas.idParams }), stickers.remove);
+router.get('/gifs', validate({ query: schemas.gifQuery }), stickers.gifs);
 
 router.get('/calls', validate({ query: schemas.callsQuery }), calls.history);
 router.get('/calls/ice-servers', calls.iceServers);

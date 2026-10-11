@@ -3,6 +3,7 @@ import { badRequest, forbidden, notFound } from '../utils/AppError.js';
 import { escapeRegex, sameId, toObjectId } from '../utils/ids.js';
 import { touchConversation } from './conversationService.js';
 import { findPeerStatus } from './statusService.js';
+import { findSticker } from './stickerService.js';
 import { config } from '../config/env.js';
 import { emitToConversation } from '../sockets/realtime.js';
 import { serializeMessage } from './serializers.js';
@@ -47,15 +48,26 @@ async function findInConversation(conversationId, messageId) {
  * Creates a message from the session user to their peer. Sender, receiver
  * and conversation always come from the server-side session, never input.
  */
-export async function createMessage(session, { type = 'text', text = '', media, clientId, replyTo, statusId }) {
+export async function createMessage(session, { type = 'text', text = '', media, clientId, replyTo, statusId, sticker: stickerIn }) {
   const { user, conversation, peerId } = session;
 
   if (clientId) {
     const existing = await findByClientId(session, clientId);
     if (existing) return { message: existing, duplicate: true };
   }
+  let sticker;
+  if (stickerIn) {
+    type = 'sticker';
+    text = '';
+    if (stickerIn.kind === 'emoji') sticker = { kind: 'emoji', code: stickerIn.code };
+    else if (stickerIn.kind === 'gif') sticker = { kind: 'gif', gifId: stickerIn.id, url: stickerIn.url, width: stickerIn.width, height: stickerIn.height, title: stickerIn.title ?? '' };
+    else {
+      const saved = await findSticker(session, stickerIn.id);
+      sticker = { kind: 'custom', key: saved.key, width: saved.width, height: saved.height };
+    }
+  }
   if (type === 'text' && !text.trim()) throw badRequest('Message cannot be empty.', 'EMPTY_MESSAGE');
-  if (type !== 'text' && !media) throw badRequest('Media is missing.', 'MEDIA_REQUIRED');
+  if (type !== 'text' && type !== 'sticker' && !media) throw badRequest('Media is missing.', 'MEDIA_REQUIRED');
 
   if (replyTo) {
     const exists = await Message.exists({ _id: toObjectId(replyTo), conversationId: conversation._id });
@@ -87,6 +99,7 @@ export async function createMessage(session, { type = 'text', text = '', media, 
       media,
       replyTo: replyTo ? toObjectId(replyTo) : null,
       statusReply,
+      sticker,
     });
   } catch (err) {
     // Concurrent retry with the same clientId: return the winner.
@@ -142,6 +155,7 @@ export async function deleteMessage(session, messageId) {
   message.deletedAt = new Date();
   message.text = '';
   message.media = undefined;
+  message.sticker = undefined;
   message.reactions = [];
   await message.save();
   removeMedia(media);
@@ -161,6 +175,7 @@ export async function editMessage(session, messageId, rawText) {
   if (!sameId(message.senderId, session.user._id)) throw forbidden('You can only edit your own messages.', 'NOT_SENDER');
   if (message.deletedAt) throw badRequest('This message was deleted.', 'MESSAGE_DELETED');
   if (message.type === 'audio') throw badRequest('Voice notes can’t be edited.', 'NOT_EDITABLE');
+  if (message.type === 'sticker') throw badRequest('Stickers can’t be edited.', 'NOT_EDITABLE');
   if (Date.now() - message.createdAt.getTime() > EDIT_WINDOW_MS) {
     throw forbidden('Messages can only be edited for 15 minutes after sending.', 'EDIT_WINDOW_PASSED');
   }

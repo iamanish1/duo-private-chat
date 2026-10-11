@@ -110,6 +110,19 @@ export function sendText(text, { status } = {}) {
   deliverText(message);
 }
 
+/**
+ * Sends a sticker: { kind:'emoji', code } | { kind:'custom', id, url } |
+ * { kind:'gif', id, url, width, height, title }. Shown at once, like text.
+ */
+export function sendSticker(input) {
+  const display = input.kind === 'emoji' ? { kind: 'emoji', code: input.code } : input.kind === 'custom' ? { kind: 'custom', url: input.url, width: input.width ?? 512, height: input.height ?? 512 } : { kind: 'gif', gifId: input.id, url: input.url, width: input.width, height: input.height, title: input.title };
+  const stickerInput = input.kind === 'emoji' ? { kind: 'emoji', code: input.code } : input.kind === 'custom' ? { kind: 'custom', id: input.id } : { kind: 'gif', id: input.id, url: input.url, width: input.width, height: input.height, title: input.title ?? '' };
+  const message = optimistic({ type: 'sticker', sticker: display, stickerInput });
+  store().upsert(message);
+  store().setReplyTo(null);
+  deliverText(message);
+}
+
 async function deliverText(message) {
   if (inflight.has(message.clientId) || !getSocket().connected) return; // flushed on reconnect
   inflight.add(message.clientId);
@@ -119,6 +132,7 @@ async function deliverText(message) {
       clientId: message.clientId,
       ...(message.replyToId && { replyTo: message.replyToId }),
       ...(message.statusId && { statusId: message.statusId }),
+      ...(message.stickerInput && { sticker: message.stickerInput }),
     });
     store().upsert(saved);
   } catch (err) {
@@ -133,7 +147,7 @@ async function deliverText(message) {
 
 export function flushOutbox() {
   store()
-    .messages.filter((m) => m.status === 'sending' && m.type === 'text' && !m.id)
+    .messages.filter((m) => m.status === 'sending' && (m.type === 'text' || m.type === 'sticker') && !m.id)
     .forEach(deliverText);
 }
 
@@ -215,7 +229,7 @@ export function cancelUpload(clientId) {
 
 export function retryMessage(message) {
   store().patchByClientId(message.clientId, { status: 'sending', error: null });
-  if (message.type === 'text') deliverText({ ...message, status: 'sending' });
+  if (message.type === 'text' || message.type === 'sticker') deliverText({ ...message, status: 'sending' });
   else upload(message.clientId);
 }
 

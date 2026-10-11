@@ -25,8 +25,23 @@ export const listMessagesQuery = z
   })
   .refine((q) => !(q.before && q.after), 'Use either before or after');
 
+// What a client may send as a sticker; the server fills in the rest.
+export const stickerInput = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('emoji'), code: z.string().regex(/^[0-9a-f]{4,6}(_[0-9a-f]{4,6}){0,7}$/, 'Unknown sticker') }),
+  z.object({ kind: z.literal('custom'), id: objectId }),
+  z.object({
+    kind: z.literal('gif'),
+    id: z.string().regex(/^[A-Za-z0-9]{3,40}$/),
+    url: z.string().max(500).regex(/^https:\/\/media\d*\.giphy\.com\/media\/[\w/.-]+\.(webp|gif)(\?[\w=&.-]*)?$/, 'Unknown GIF'),
+    width: z.number().int().min(1).max(2000),
+    height: z.number().int().min(1).max(2000),
+    title: z.string().max(140).optional(),
+  }),
+]);
+
 export const sendMessageBody = z.object({
   text: z.string().max(4000, 'Messages can be up to 4000 characters'),
+  sticker: stickerInput.optional(),
   clientId: clientId.optional(),
   replyTo: optionalObjectId,
   // Replying to the other person's status.
@@ -48,6 +63,11 @@ export const statusUploadBody = z.object({
 export const reactionBody = z.object({ emoji: emoji.nullable() });
 
 export const keepBody = z.object({ keep: z.boolean() });
+
+export const gifQuery = z.object({
+  q: z.string().trim().max(60).optional(),
+  offset: z.coerce.number().int().min(0).max(4999).optional(),
+});
 
 // Chat background: a preset id from the client's palette, or (for a photo) just the dimming.
 export const wallpaperBody = z.object({

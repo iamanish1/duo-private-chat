@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Camera, Check, Keyboard, Mic, Paperclip, SendHorizontal, Smile } from 'lucide-react';
 import { IconButton } from '../common/IconButton';
-import { EmojiPicker } from './EmojiPicker';
+import { ExpressionPanel } from '../stickers/ExpressionPanel';
 import { ReplyBar } from './ReplyBar';
 import { EditBar } from './EditBar';
 import { AttachmentSheet } from './AttachmentSheet';
@@ -203,7 +203,7 @@ export function Composer({ onFirstSend }) {
         <VoiceRecorderBar onSend={onVoiceRecorded} onClose={closeRecorder} />
       ) : (
       <div className={`mx-auto flex max-w-3xl items-end gap-1.5 px-2 pt-2 ${emojiOpen ? 'pb-2' : 'pb-[calc(var(--safe-bottom)+8px)]'}`}>
-        <IconButton label={emojiOpen ? 'Show keyboard' : 'Emoji'} variant="muted" onClick={toggleEmoji}>
+        <IconButton label={emojiOpen ? 'Show keyboard' : 'Emoji, stickers & GIFs'} variant="muted" onClick={toggleEmoji}>
           {emojiOpen ? <Keyboard size={22} /> : <Smile size={22} />}
         </IconButton>
 
@@ -257,7 +257,14 @@ export function Composer({ onFirstSend }) {
       </div>
       )}
 
-      {emojiOpen && <EmojiPicker onSelect={insertEmoji} className="h-[min(300px,40vh)] animate-sheet-up border-t border-line pb-safe" />}
+      {emojiOpen && (
+        <ExpressionPanel
+          onEmoji={insertEmoji}
+          onSent={() => onFirstSend?.()}
+          emojiOnly={Boolean(editing)}
+          className="h-[min(340px,46vh)] animate-sheet-up border-t border-line pb-safe"
+        />
+      )}
 
       <input
         ref={fileRef}

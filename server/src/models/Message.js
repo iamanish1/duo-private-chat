@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-export const MESSAGE_TYPES = ['text', 'image', 'video', 'audio'];
+export const MESSAGE_TYPES = ['text', 'image', 'video', 'audio', 'sticker'];
 export const MESSAGE_STATUSES = ['sent', 'delivered', 'read'];
 
 // Media binaries live in object storage; MongoDB keeps only the storage key
@@ -17,6 +17,22 @@ export const mediaSchema = new mongoose.Schema(
     // Voice notes: ~48 normalized peaks (0–100) for drawing the bubble waveform.
     waveform: { type: [Number], default: undefined },
     thumbnailKey: String,
+  },
+  { _id: false },
+);
+
+// A sticker message: an animated emoji (by codepoint), one of your own stickers
+// (its stored image), or a GIF from GIPHY (its media URL).
+const stickerSchema = new mongoose.Schema(
+  {
+    kind: { type: String, enum: ['emoji', 'custom', 'gif'], required: true },
+    code: { type: String, maxlength: 40 },
+    key: String,
+    gifId: { type: String, maxlength: 40 },
+    url: { type: String, maxlength: 500 },
+    title: { type: String, maxlength: 140 },
+    width: Number,
+    height: Number,
   },
   { _id: false },
 );
@@ -53,6 +69,7 @@ const messageSchema = new mongoose.Schema(
     type: { type: String, enum: MESSAGE_TYPES, required: true },
     text: { type: String, maxlength: 4000, default: '' },
     media: { type: mediaSchema, default: undefined },
+    sticker: { type: stickerSchema, default: undefined },
     replyTo: { type: mongoose.Schema.Types.ObjectId, ref: 'Message', default: null },
     statusReply: { type: statusReplySchema, default: undefined },
     reactions: { type: [reactionSchema], default: [] },

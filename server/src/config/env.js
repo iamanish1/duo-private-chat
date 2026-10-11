@@ -76,6 +76,8 @@ const schema = z.object({
   TURN_BACKUP2_USERNAME: optionalString,
   TURN_BACKUP2_CREDENTIAL: optionalString,
   CLOUDFLARE_TURN_KEY_ID: optionalString,
+  // GIF search (free key from developers.giphy.com). Without it the GIF tab explains how to enable it.
+  GIPHY_API_KEY: optionalString,
   CLOUDFLARE_TURN_API_TOKEN: optionalString,
 
   SMTP_HOST: optionalString,
@@ -155,6 +157,7 @@ function buildConfig() {
       subject: env.VAPID_SUBJECT || 'mailto:admin@localhost',
       enabled: Boolean(env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY),
     },
+    giphyApiKey: env.GIPHY_API_KEY,
     webrtc: {
       stunUrls: csv(env.STUN_URLS),
       turnUrls: csv(env.TURN_SERVER_URL),

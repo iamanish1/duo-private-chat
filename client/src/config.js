@@ -22,6 +22,7 @@ export const canEditMessage = (message, myId) =>
       message.senderId === myId &&
       !message.deleted &&
       message.type !== 'audio' &&
+      message.type !== 'sticker' &&
       message.status !== 'sending' &&
       message.status !== 'failed' &&
       Date.now() - new Date(message.createdAt).getTime() < EDIT_WINDOW_MS,

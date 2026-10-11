@@ -24,10 +24,10 @@ function securityHeaders() {
             scriptSrc: ["'self'", ...YOUTUBE_SCRIPT],
             frameSrc: YOUTUBE_FRAME,
             styleSrc: ["'self'", "'unsafe-inline'"],
-            imgSrc: ["'self'", 'data:', 'blob:', ...MEDIA_ORIGINS, 'https://i.ytimg.com'],
+            imgSrc: ["'self'", 'data:', 'blob:', ...MEDIA_ORIGINS, 'https://i.ytimg.com', 'https://fonts.gstatic.com', 'https://*.giphy.com'],
             mediaSrc: ["'self'", 'blob:', ...MEDIA_ORIGINS],
             // Older Safari doesn't treat 'self' as covering WebSockets; name the host explicitly.
-            connectSrc: ["'self'", (req) => `wss://${req.get('host')}`, (req) => `ws://${req.get('host')}`, ...MEDIA_ORIGINS],
+            connectSrc: ["'self'", (req) => `wss://${req.get('host')}`, (req) => `ws://${req.get('host')}`, ...MEDIA_ORIGINS, 'https://fonts.gstatic.com'],
             fontSrc: ["'self'", 'data:'],
             workerSrc: ["'self'"],
             manifestSrc: ["'self'"],

@@ -5,6 +5,7 @@ import { MediaContent } from './MediaContent';
 import { VoiceNote } from './VoiceNote';
 import { ReplyQuote } from './ReplyQuote';
 import { StatusQuote } from '../status/StatusQuote';
+import { StickerContent } from '../stickers/StickerContent';
 import { RichText } from './RichText';
 import { useBubbleGestures } from '../../hooks/useBubbleGestures';
 import { isEmojiOnly } from '../../utils/emoji';
@@ -66,6 +67,21 @@ export const MessageBubble = memo(function MessageBubble({
       <div className={`flex items-center gap-2 border px-3.5 py-2 text-[15px] italic ${bubbleShape(mine, first)} ${mine ? 'border-transparent bg-bubble-out/60 text-on-accent/85' : 'border-line bg-bubble-in text-muted'}`}>
         <Ban size={15} /> {mine ? 'You deleted this message' : 'This message was deleted'}
         <span className="ml-1 text-[11px] not-italic opacity-70">{time}</span>
+      </div>
+    );
+  } else if (message.type === 'sticker' && message.sticker) {
+    body = (
+      <div className={`flex flex-col ${mine ? 'items-end' : 'items-start'}`}>
+        {message.replyTo && (
+          <div className="mb-1 max-w-[260px]">
+            <ReplyQuote reply={message.replyTo} authorName={replyAuthor} mine={false} onClick={() => onJump(message.replyTo.id)} />
+          </div>
+        )}
+        <StickerContent sticker={message.sticker} />
+        <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-surface-2/90 px-2 py-0.5 text-[11px] text-muted">
+          {time}
+          {mine && <MessageStatus status={message.status} onMedia />}
+        </span>
       </div>
     );
   } else if (bigEmoji) {

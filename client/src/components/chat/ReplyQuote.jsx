@@ -6,6 +6,7 @@ export const describeMessage = (m) => {
   if (m.type === 'image') return m.text || '📷 Photo';
   if (m.type === 'video') return m.text || '🎥 Video';
   if (m.type === 'audio') return '🎤 Voice message';
+  if (m.type === 'sticker') return m.sticker?.kind === 'gif' ? 'GIF' : '✨ Sticker';
   return m.text;
 };
 
