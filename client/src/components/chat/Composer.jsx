@@ -203,17 +203,13 @@ export function Composer({ onFirstSend }) {
       {recording ? (
         <VoiceRecorderBar onSend={onVoiceRecorded} onClose={closeRecorder} />
       ) : (
-      <div className={`mx-auto flex max-w-3xl items-end gap-1 px-1.5 pt-2 min-[421px]:gap-1.5 min-[421px]:px-2 ${emojiOpen ? 'pb-2' : 'pb-[calc(var(--safe-bottom)+8px)]'}`}>
-        <IconButton label={emojiOpen ? 'Show keyboard' : 'Emoji, stickers & GIFs'} variant="muted" onClick={toggleEmoji} className="max-[420px]:size-10">
-          {emojiOpen ? <Keyboard size={22} /> : <Smile size={22} />}
-        </IconButton>
-        {!hasText && !editing && (
-          <IconButton label="Send a heart — thinking of you" variant="muted" onClick={sendHeart} disabled={!ready} className="text-accent! hover:text-accent-strong! max-[420px]:size-10">
-            <Heart size={21} />
+      <div className={`mx-auto flex max-w-3xl items-end gap-1.5 px-2 pt-2 ${emojiOpen ? 'pb-2' : 'pb-[calc(var(--safe-bottom)+8px)]'}`}>
+        {/* WhatsApp-style: one rounded box holds 😊 (left) and ❤️ 📎 📷 (right), so the
+            typing area gets all the remaining width on any phone; only Send / 🎤 sits outside. */}
+        <div className="flex min-h-11 min-w-0 flex-1 items-end rounded-[22px] border border-line bg-surface transition focus-within:border-accent/50">
+          <IconButton label={emojiOpen ? 'Show keyboard' : 'Emoji, stickers & GIFs'} variant="muted" size="sm" onClick={toggleEmoji} className="mb-[3px] ml-1 shrink-0">
+            {emojiOpen ? <Keyboard size={21} /> : <Smile size={21} />}
           </IconButton>
-        )}
-
-        <div className="flex min-h-11 flex-1 items-end rounded-[22px] border border-line bg-surface transition focus-within:border-accent/50">
           <textarea
             ref={inputRef}
             value={text}
@@ -231,14 +227,18 @@ export function Composer({ onFirstSend }) {
             enterKeyHint="enter"
             autoComplete="off"
             aria-label="Message"
-            className="block max-h-[148px] min-h-11 w-full resize-none bg-transparent px-3 min-[421px]:px-4 py-[10px] leading-6 placeholder:text-muted focus:outline-none"
+            className="block max-h-[148px] min-h-11 min-w-0 flex-1 resize-none bg-transparent py-[10px] pr-2 pl-1 leading-6 placeholder:text-muted focus:outline-none"
           />
+          {/* While you type these step aside, giving the text the whole box. */}
           {!hasText && !editing && (
-            <div className="flex shrink-0 items-center pr-1 pb-0.5">
+            <div className="mb-[3px] mr-1 flex shrink-0 items-center">
+              <IconButton label="Send a heart — thinking of you" variant="muted" size="sm" onClick={sendHeart} disabled={!ready} className="text-accent! hover:text-accent-strong!">
+                <Heart size={20} />
+              </IconButton>
               <IconButton label="Attach photo or video" variant="muted" size="sm" onClick={() => setAttachOpen(true)} disabled={!ready}>
                 <Paperclip size={20} />
               </IconButton>
-              {/* Narrow phones: the camera is in 📎 attach ("Take photo"), keeping the box wide. */}
+              {/* Narrow phones: the camera is in 📎 attach ("Take a photo"). */}
               <IconButton label="Camera" variant="muted" size="sm" onClick={() => openPicker('camera-photo')} disabled={!ready} className="max-[420px]:hidden">
                 <Camera size={20} />
               </IconButton>
@@ -246,20 +246,23 @@ export function Composer({ onFirstSend }) {
           )}
         </div>
 
-        <IconButton
-          label={editing ? 'Save edit' : 'Send'}
-          variant="accent"
-          onPointerDown={(e) => e.preventDefault() /* keep the keyboard open */}
-          onClick={submit}
-          disabled={!ready || (editing ? editing.type === 'text' && !hasText : !hasText)}
-          className={`transition-all duration-200 ${showSend ? 'scale-100 opacity-100' : 'pointer-events-none w-0 scale-50 opacity-0'}`}
-        >
-          {editing ? <Check size={21} /> : <SendHorizontal size={20} />}
-        </IconButton>
-        {showMic && (
-          <IconButton label="Record voice note" variant="accent" onClick={startRecording} disabled={!ready} className="animate-pop">
-            <Mic size={21} />
+        {showSend ? (
+          <IconButton
+            label={editing ? 'Save edit' : 'Send'}
+            variant="accent"
+            onPointerDown={(e) => e.preventDefault() /* keep the keyboard open */}
+            onClick={submit}
+            disabled={!ready || (editing ? editing.type === 'text' && !hasText : !hasText)}
+            className="shrink-0 animate-pop"
+          >
+            {editing ? <Check size={21} /> : <SendHorizontal size={20} />}
           </IconButton>
+        ) : (
+          showMic && (
+            <IconButton label="Record voice note" variant="accent" onClick={startRecording} disabled={!ready} className="shrink-0 animate-pop">
+              <Mic size={21} />
+            </IconButton>
+          )
         )}
       </div>
       )}
