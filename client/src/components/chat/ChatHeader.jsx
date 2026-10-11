@@ -28,7 +28,9 @@ export function ChatHeader({ onCall, onMenu, onProfile, onWatch, callDisabled })
 
   return (
     <header className="glass relative z-20 border-b border-line pt-safe">
-      <div className="mx-auto flex h-16 max-w-3xl items-center gap-1 pr-1 pl-2">
+      {/* Narrow phones (≤420px wide): Watch together lives in the ⋮ menu and icons are a bit
+          smaller, so the name and "last seen" stay readable. */}
+      <div className="mx-auto flex h-16 max-w-3xl items-center gap-0.5 pr-1 pl-2 min-[421px]:gap-1">
         <PeerAvatar size="md" className="ml-1" />
         <button type="button" onClick={onProfile} className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl p-1.5 text-left transition hover:bg-surface-2/70 lg:pointer-events-none" aria-label={`About ${peer?.name ?? 'chat'}`}>
           <span className="min-w-0">
@@ -38,16 +40,16 @@ export function ChatHeader({ onCall, onMenu, onProfile, onWatch, callDisabled })
             </span>
           </span>
         </button>
-        <IconButton label="Watch together" onClick={onWatch}>
+        <IconButton label="Watch together" onClick={onWatch} className="max-[420px]:hidden">
           <Popcorn size={21} />
         </IconButton>
-        <IconButton label={`Voice call ${peer?.name ?? ''}`} onClick={() => onCall('audio')} disabled={callDisabled}>
+        <IconButton label={`Voice call ${peer?.name ?? ''}`} onClick={() => onCall('audio')} disabled={callDisabled} className="max-[420px]:size-10">
           <Phone size={21} />
         </IconButton>
-        <IconButton label={`Video call ${peer?.name ?? ''}`} onClick={() => onCall('video')} disabled={callDisabled}>
+        <IconButton label={`Video call ${peer?.name ?? ''}`} onClick={() => onCall('video')} disabled={callDisabled} className="max-[420px]:size-10">
           <Video size={23} />
         </IconButton>
-        <IconButton label="Menu" onClick={onMenu} className="lg:hidden">
+        <IconButton label="Menu" onClick={onMenu} className="max-[420px]:size-9 lg:hidden">
           <EllipsisVertical size={22} />
         </IconButton>
       </div>

@@ -203,12 +203,12 @@ export function Composer({ onFirstSend }) {
       {recording ? (
         <VoiceRecorderBar onSend={onVoiceRecorded} onClose={closeRecorder} />
       ) : (
-      <div className={`mx-auto flex max-w-3xl items-end gap-1.5 px-2 pt-2 ${emojiOpen ? 'pb-2' : 'pb-[calc(var(--safe-bottom)+8px)]'}`}>
-        <IconButton label={emojiOpen ? 'Show keyboard' : 'Emoji, stickers & GIFs'} variant="muted" onClick={toggleEmoji}>
+      <div className={`mx-auto flex max-w-3xl items-end gap-1 px-1.5 pt-2 min-[421px]:gap-1.5 min-[421px]:px-2 ${emojiOpen ? 'pb-2' : 'pb-[calc(var(--safe-bottom)+8px)]'}`}>
+        <IconButton label={emojiOpen ? 'Show keyboard' : 'Emoji, stickers & GIFs'} variant="muted" onClick={toggleEmoji} className="max-[420px]:size-10">
           {emojiOpen ? <Keyboard size={22} /> : <Smile size={22} />}
         </IconButton>
         {!hasText && !editing && (
-          <IconButton label="Send a heart — thinking of you" variant="muted" onClick={sendHeart} disabled={!ready} className="text-accent! hover:text-accent-strong!">
+          <IconButton label="Send a heart — thinking of you" variant="muted" onClick={sendHeart} disabled={!ready} className="text-accent! hover:text-accent-strong! max-[420px]:size-10">
             <Heart size={21} />
           </IconButton>
         )}
@@ -231,14 +231,15 @@ export function Composer({ onFirstSend }) {
             enterKeyHint="enter"
             autoComplete="off"
             aria-label="Message"
-            className="block max-h-[148px] min-h-11 w-full resize-none bg-transparent px-4 py-[10px] leading-6 placeholder:text-muted focus:outline-none"
+            className="block max-h-[148px] min-h-11 w-full resize-none bg-transparent px-3 min-[421px]:px-4 py-[10px] leading-6 placeholder:text-muted focus:outline-none"
           />
           {!hasText && !editing && (
             <div className="flex shrink-0 items-center pr-1 pb-0.5">
               <IconButton label="Attach photo or video" variant="muted" size="sm" onClick={() => setAttachOpen(true)} disabled={!ready}>
                 <Paperclip size={20} />
               </IconButton>
-              <IconButton label="Camera" variant="muted" size="sm" onClick={() => openPicker('camera-photo')} disabled={!ready}>
+              {/* Narrow phones: the camera is in 📎 attach ("Take photo"), keeping the box wide. */}
+              <IconButton label="Camera" variant="muted" size="sm" onClick={() => openPicker('camera-photo')} disabled={!ready} className="max-[420px]:hidden">
                 <Camera size={20} />
               </IconButton>
             </div>
