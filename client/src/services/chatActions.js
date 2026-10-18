@@ -12,7 +12,8 @@ const store = () => useChatStore.getState();
 const inflight = new Set();
 const pendingMedia = new Map(); // clientId -> { prepared, caption, replyToId }
 const uploadControllers = new Map();
-const view = { atBottom: true };
+// Only true while the chat itself is on screen and scrolled to the newest message.
+const view = { atBottom: false };
 let lastReadSent = null;
 
 const replySummary = (m) =>
@@ -317,11 +318,13 @@ export function markSeen() {
   const target = latestUnreadIncoming(messages, me.id);
   if (!target || target.id === lastReadSent) return;
   lastReadSent = target.id;
-  const now = new Date().toISOString();
   const ids = messages.filter((m) => m.senderId !== me.id && m.id && m.id <= target.id && m.status !== 'read').map((m) => m.id);
-  store().applyStatus({ ids, status: 'read', at: now });
-  if (getSocket().connected) emit('message:read', { upTo: target.id });
-  else chatApi.markRead(target.id).catch(() => {
-    lastReadSent = null;
-  });
+  // Confirmed delivery: a socket that only looks connected (phone just woke up)
+  // would silently drop a plain emit, so fall back to HTTP and retry next time.
+  emitWithAck('message:read', { upTo: target.id }, 5000)
+    .catch(() => chatApi.markRead(target.id))
+    .then(() => store().applyStatus({ ids, status: 'read', at: new Date().toISOString() }))
+    .catch(() => {
+      if (lastReadSent === target.id) lastReadSent = null;
+    });
 }

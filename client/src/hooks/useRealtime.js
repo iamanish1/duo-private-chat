@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { getSocket } from '../services/socket';
+import { emitWithAck, getSocket } from '../services/socket';
 import { acknowledgeDelivered, flushOutbox, markSeen, syncNewer } from '../services/chatActions';
 import { loadStatuses, statusSocketHandlers } from '../services/statusActions';
 import { refreshWatch, watchSocketHandlers } from '../services/watchActions';
@@ -35,7 +35,26 @@ export function useRealtime({ onSessionEnded }) {
         hiddenUnread = 0;
         document.title = APP_NAME;
         markSeen();
+        checkAlive();
       }
+    };
+
+    // After the phone wakes the app, the old connection can look "connected"
+    // for ~20 s while actually dead. Ping it; if silent, reconnect right away.
+    let checking = false;
+    const checkAlive = () => {
+      if (checking || !socket.connected) return;
+      checking = true;
+      emitWithAck('presence:ping', {}, 3500)
+        .catch((err) => {
+          if (err.code === 'TIMEOUT') {
+            socket.disconnect();
+            socket.connect();
+          }
+        })
+        .finally(() => {
+          checking = false;
+        });
     };
 
     const notifyIfHidden = (message) => {
@@ -126,8 +145,11 @@ export function useRealtime({ onSessionEnded }) {
 
     const onOnline = () => {
       // The socket may have survived a brief offline blip; just clear the banner.
-      if (socket.connected) store().setConnection('connected');
-      else socket.connect();
+      // A Wi-Fi ↔ mobile-data switch usually kills it though, so check.
+      if (socket.connected) {
+        store().setConnection('connected');
+        checkAlive();
+      } else socket.connect();
     };
     const onOffline = () => store().setConnection('offline');
 

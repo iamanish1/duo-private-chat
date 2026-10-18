@@ -52,15 +52,28 @@ export function MessageList({ onActions, onOpenMedia, jumpRequest, onJump }) {
     const before = prev.current;
     if (before.count === 0 && messages.length) {
       scrollToBottom();
+      atBottom.current = true;
+      setViewportAtBottom(true);
     } else if (firstId !== before.firstId && lastKey === before.lastKey && snapshot.current) {
       node.scrollTop = snapshot.current.top + (node.scrollHeight - snapshot.current.height);
     } else if (lastKey !== before.lastKey && last) {
       const mine = last.senderId === me?.id;
       if (mine || atBottom.current) scrollToBottom(mine ? 'auto' : 'smooth');
       else setUnseen((n) => n + 1);
+      // Replying means everything above was seen.
+      if (mine) {
+        atBottom.current = true;
+        setViewportAtBottom(true);
+      }
     }
     prev.current = { firstId, lastKey, count: messages.length };
   }, [messages, firstId, lastKey, last, me?.id, scrollToBottom]);
+
+  // Read receipts only while this list is on screen (not on Status, Together…).
+  useEffect(() => {
+    setViewportAtBottom(atBottom.current);
+    return () => setViewportAtBottom(false);
+  }, []);
 
   // Keyboard open/close and layout changes: stay pinned if we were at the bottom.
   useEffect(() => {

@@ -27,6 +27,9 @@ export async function registerPresenceHandlers(socket, on) {
     if (endpoint !== undefined) socket.data.pushEndpoint = endpoint;
   });
 
+  // Lets a waking phone check its connection is really alive.
+  on('presence:ping', async () => ({}));
+
   // Typing is throttled client-side; the server only relays to the peer.
   on('typing:start', async () => {
     socket.to(userRoom(peerId)).emit('typing:start', { userId });
