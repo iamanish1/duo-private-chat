@@ -1,18 +1,19 @@
 import { Conversation } from '../models/index.js';
 import { sameId } from '../utils/ids.js';
 
-// There is exactly one conversation in the system; cache it after first read.
-let cached = null;
+// Each person belongs to exactly one private conversation; cache it per person.
+const cached = new Map(); // userId -> conversation
 
-export async function getPrimaryConversation() {
-  if (cached) return cached;
-  const conversation = await Conversation.findOne({ singleton: 'primary' }).lean();
-  if (conversation) cached = conversation;
+export async function getConversationOf(userId) {
+  const key = String(userId);
+  if (cached.has(key)) return cached.get(key);
+  const conversation = await Conversation.findOne({ participants: userId }).lean();
+  if (conversation) cached.set(key, conversation);
   return conversation;
 }
 
 export function clearConversationCache() {
-  cached = null;
+  cached.clear();
 }
 
 export const isParticipant = (conversation, userId) =>

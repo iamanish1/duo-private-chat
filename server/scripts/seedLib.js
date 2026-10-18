@@ -5,18 +5,19 @@ import { clearConversationCache } from '../src/services/conversationService.js';
 const MIN_PASSWORD_LENGTH = 8;
 
 function validateInput(users) {
+  if (users.length < 2 || users.length % 2) throw new Error('Authorized users must come in pairs (1+2, 3+4, …).');
   users.forEach((u, i) => {
     const n = i + 1;
     if (!u.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(u.email)) throw new Error(`AUTHORIZED_USER_${n}_EMAIL is missing or invalid.`);
     if (!u.name) throw new Error(`AUTHORIZED_USER_${n}_NAME is missing.`);
   });
-  if (users[0].email === users[1].email) throw new Error('The two authorized emails must be different.');
+  if (new Set(users.map((u) => u.email)).size !== users.length) throw new Error('The authorized emails must all be different.');
 }
 
 /**
- * Idempotent: creates missing users, never creates a third user, and ensures
- * exactly one conversation between the two. Refuses to run if the database
- * already holds users other than the two configured ones.
+ * Idempotent: creates missing users and exactly one private conversation per
+ * pair (users 1+2, 3+4, …). Never creates anyone not listed, and refuses to
+ * run if the database already holds users other than the configured ones.
  */
 export async function seedAuthorizedUsers(users, { resetPasswords = false } = {}) {
   validateInput(users);
@@ -55,14 +56,19 @@ export async function seedAuthorizedUsers(users, { resetPasswords = false } = {}
   }
 
   await Conversation.syncIndexes();
-  const conversation = await Conversation.findOne({ singleton: 'primary' });
-  if (!conversation) {
-    await Conversation.create({ participants: ids });
-    log.push('Created the private conversation');
-  } else {
-    const same = conversation.participants.map(String).sort().join() === ids.map(String).sort().join();
-    if (!same) throw new Error('A conversation already exists between different users. Refusing to change it.');
-    log.push('Private conversation already exists');
+  for (let i = 0; i < ids.length; i += 2) {
+    const pair = [ids[i], ids[i + 1]];
+    const names = `${users[i].name} & ${users[i + 1].name}`;
+    const existing = await Conversation.find({ participants: { $in: pair } }).lean();
+    const same = existing.length === 1 && existing[0].participants.map(String).sort().join() === pair.map(String).sort().join();
+    if (same) {
+      log.push(`Private conversation of ${names} already exists`);
+    } else if (existing.length) {
+      throw new Error(`${names} already belong to a different conversation. Refusing to change it.`);
+    } else {
+      await Conversation.create({ participants: pair });
+      log.push(`Created the private conversation of ${names}`);
+    }
   }
   clearConversationCache();
   return { userIds: ids, log };

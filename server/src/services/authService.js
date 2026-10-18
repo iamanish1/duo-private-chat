@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { config } from '../config/env.js';
 import { User } from '../models/index.js';
 import { AppError, unauthorized, forbidden } from '../utils/AppError.js';
-import { getPrimaryConversation, isParticipant, peerIdOf } from './conversationService.js';
+import { getConversationOf, isParticipant, peerIdOf } from './conversationService.js';
 
 export const BCRYPT_ROUNDS = 12;
 const MAX_FAILED_ATTEMPTS = 5;
@@ -46,7 +46,7 @@ export async function authenticate(email, password) {
     throw invalidCredentials();
   }
 
-  const conversation = await getPrimaryConversation();
+  const conversation = await getConversationOf(user._id);
   if (!isParticipant(conversation, user._id)) throw invalidCredentials();
 
   // A password sign-in also clears any Duo-code lockout.
@@ -73,7 +73,7 @@ export function signDeviceToken(user) {
 /**
  * Turns a raw token into the request's private-room context. Every check is
  * server-side: valid signature, unrevoked, allow-listed, and a participant
- * of the single conversation.
+ * of their own pair's conversation.
  */
 export async function resolveSession(token, { device = false, select = '' } = {}) {
   if (!token) throw unauthorized();
@@ -91,7 +91,7 @@ export async function resolveSession(token, { device = false, select = '' } = {}
   }
   if (!isAuthorizedEmail(user.email)) throw forbidden('This account is not authorized.', 'NOT_AUTHORIZED');
 
-  const conversation = await getPrimaryConversation();
+  const conversation = await getConversationOf(user._id);
   if (!isParticipant(conversation, user._id)) throw forbidden('This account is not authorized.', 'NOT_AUTHORIZED');
 
   return { user, conversation, peerId: peerIdOf(conversation, user._id), expiresAt: payload.exp * 1000 };

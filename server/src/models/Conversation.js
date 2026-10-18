@@ -10,8 +10,6 @@ const conversationSchema = new mongoose.Schema(
       },
       required: true,
     },
-    // Unique constant: the database itself refuses a second conversation.
-    singleton: { type: String, default: 'primary', enum: ['primary'], unique: true, immutable: true },
     lastMessageAt: { type: Date, default: null },
     // Days together & countdowns (calendar days like "2025-02-14").
     together: {
@@ -53,5 +51,9 @@ const conversationSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+// Unique across the array: the database itself refuses to put a person in a
+// second conversation, so pairs can never see each other.
+conversationSchema.index({ participants: 1 }, { unique: true });
 
 export const Conversation = mongoose.model('Conversation', conversationSchema);

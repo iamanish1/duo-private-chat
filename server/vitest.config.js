@@ -14,6 +14,8 @@ export default defineConfig({
       JWT_SECRET: 'test-secret-that-is-definitely-longer-than-32-chars',
       AUTHORIZED_USER_1_EMAIL: 'alex@example.com',
       AUTHORIZED_USER_2_EMAIL: 'sam@example.com',
+      AUTHORIZED_USER_3_EMAIL: 'taylor@example.com',
+      AUTHORIZED_USER_4_EMAIL: 'jordan@example.com',
       STORAGE_DRIVER: 'local',
       LOCAL_UPLOAD_DIR: path.join(os.tmpdir(), 'duo-test-uploads'),
       MEDIA_MAX_IMAGE_MB: '1',

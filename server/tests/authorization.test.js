@@ -52,10 +52,10 @@ describe('two-person restriction', () => {
     await expect(connectSocket(ctx.url)).rejects.toThrow('unauthorized');
   });
 
-  it('allows only one conversation in the database', async () => {
+  it('refuses to put an authorized person in a second conversation', async () => {
     const users = await User.find({ email: { $in: [USERS.alex.email, USERS.sam.email] } });
     await expect(Conversation.create({ participants: users.map((u) => u._id) })).rejects.toThrow(/duplicate key/);
-    await expect(Conversation.create({ participants: [users[0]._id, intruder._id], singleton: 'other' })).rejects.toThrow();
+    await expect(Conversation.create({ participants: [users[0]._id, intruder._id] })).rejects.toThrow(/duplicate key/);
     expect(await Conversation.countDocuments()).toBe(1);
   });
 

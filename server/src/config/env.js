@@ -102,6 +102,17 @@ const schema = z.object({
   CALL_RECONNECT_GRACE_MS: intWithDefault(20_000),
 });
 
+// AUTHORIZED_USER_1_EMAIL, _2_, _3_… in order; 1+2 are one pair, 3+4 the next.
+function authorizedEmailsFrom(source) {
+  const emails = [];
+  for (let n = 1; n <= 40; n += 1) {
+    const email = source[`AUTHORIZED_USER_${n}_EMAIL`]?.trim().toLowerCase();
+    if (!email) break;
+    emails.push(email);
+  }
+  return emails;
+}
+
 function buildConfig() {
   const parsed = schema.safeParse(process.env);
   if (!parsed.success) {
@@ -131,7 +142,7 @@ function buildConfig() {
     trustProxy: env.TRUST_PROXY,
     serveClient,
     clientDist,
-    authorizedEmails: [env.AUTHORIZED_USER_1_EMAIL, env.AUTHORIZED_USER_2_EMAIL].filter(Boolean),
+    authorizedEmails: authorizedEmailsFrom(process.env),
     storage: {
       driver: storageDriver,
       cloudinary: {
@@ -206,10 +217,11 @@ export function assertRuntimeConfig() {
   const problems = [];
   if (!config.mongoUri) problems.push('MONGODB_URI is required');
   if (!config.jwt.secret || config.jwt.secret.length < 32) problems.push('JWT_SECRET must be at least 32 characters');
-  if (config.authorizedEmails.length !== 2) {
-    problems.push('AUTHORIZED_USER_1_EMAIL and AUTHORIZED_USER_2_EMAIL must both be set');
-  } else if (config.authorizedEmails[0] === config.authorizedEmails[1]) {
-    problems.push('The two authorized emails must be different');
+  const emails = config.authorizedEmails;
+  if (emails.length < 2 || emails.length % 2) {
+    problems.push('AUTHORIZED_USER_*_EMAIL must come in pairs (1+2, 3+4, …)');
+  } else if (new Set(emails).size !== emails.length) {
+    problems.push('The authorized emails must all be different');
   }
   if (config.storage.driver === 'cloudinary' && !config.storage.cloudinary.apiSecret) {
     problems.push('STORAGE_DRIVER=cloudinary requires CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET');

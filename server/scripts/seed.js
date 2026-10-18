@@ -1,5 +1,6 @@
 /**
- * Provisions the two authorized people and their single conversation.
+ * Provisions the authorized people, two by two (1+2, 3+4, …), each pair with
+ * its own private conversation.
  *   npm run seed            create users (or update name), keep existing passwords
  *   npm run seed -- --reset-passwords   also re-hash passwords from .env
  * Credentials come only from environment variables.
@@ -19,9 +20,11 @@ async function main() {
   const resetPasswords = process.argv.includes('--reset-passwords');
   await connectDatabase(config.mongoUri);
   try {
-    const result = await seedAuthorizedUsers([readUser(1), readUser(2)], { resetPasswords });
+    const users = [];
+    for (let n = 1; process.env[`AUTHORIZED_USER_${n}_EMAIL`]; n += 1) users.push(readUser(n));
+    const result = await seedAuthorizedUsers(users, { resetPasswords });
     for (const line of result.log) console.log(`  ${line}`);
-    console.log('\nSeed complete. Exactly two users and one conversation exist.');
+    console.log(`\nSeed complete. ${users.length} people in ${users.length / 2} private conversation(s).`);
   } finally {
     await disconnectDatabase();
   }

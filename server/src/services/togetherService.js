@@ -144,21 +144,24 @@ export async function sendDueReminders(now = new Date()) {
   const timeZone = config.reminderTimeZone;
   if (hourIn(timeZone, now) < REMINDER_HOUR) return 0;
   const today = todayIn(timeZone, now);
-  const conversation = await Conversation.findOne({ 'together.lastReminderDay': { $ne: today } }).select('participants together').lean();
-  if (!conversation) return 0;
-  // Claim the day first so a restart can't send twice.
-  const claimed = await Conversation.updateOne({ _id: conversation._id, 'together.lastReminderDay': { $ne: today } }, { $set: { 'together.lastReminderDay': today } });
-  if (!claimed.modifiedCount) return 0;
-  const reminders = remindersFor(conversation.together, today);
-  for (const r of reminders) {
-    emitToConversation(conversation._id, 'together:reminder', r);
-    if (isPushEnabled()) {
-      for (const userId of conversation.participants) {
-        await sendToUser(userId, { type: 'reminder', tag: `duo-reminder-${today}`, url: '/together', title: r.title, body: r.body }, { ttl: 12 * 60 * 60 }).catch(() => {});
+  const conversations = await Conversation.find({ 'together.lastReminderDay': { $ne: today } }).select('participants together').lean();
+  let sent = 0;
+  for (const conversation of conversations) {
+    // Claim the day first so a restart can't send twice.
+    const claimed = await Conversation.updateOne({ _id: conversation._id, 'together.lastReminderDay': { $ne: today } }, { $set: { 'together.lastReminderDay': today } });
+    if (!claimed.modifiedCount) continue;
+    const reminders = remindersFor(conversation.together, today);
+    for (const r of reminders) {
+      emitToConversation(conversation._id, 'together:reminder', r);
+      if (isPushEnabled()) {
+        for (const userId of conversation.participants) {
+          await sendToUser(userId, { type: 'reminder', tag: `duo-reminder-${today}`, url: '/together', title: r.title, body: r.body }, { ttl: 12 * 60 * 60 }).catch(() => {});
+        }
       }
     }
+    sent += reminders.length;
   }
-  return reminders.length;
+  return sent;
 }
 
 export { iso };
