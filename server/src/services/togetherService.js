@@ -25,8 +25,10 @@ export async function sendNudge(session) {
     const hidden = recipient?.settings?.notificationPreview === 'hidden';
     await sendToUser(
       peerId,
-      { type: 'nudge', tag: 'duo-nudge', url: '/', title: hidden ? 'Duo' : session.user.name, body: hidden ? 'Someone is thinking of you ❤️' : 'is thinking of you ❤️' },
-      { urgency: 'high', topic: 'nudge', ttl: 60 * 60, skipEndpoints },
+      // A tag of its own per heart: each one shows (and buzzes) as a separate
+      // notification, and no topic, so hearts queued while offline aren't merged.
+      { type: 'nudge', tag: `duo-nudge-${now}`, url: '/', title: hidden ? 'Duo' : session.user.name, body: hidden ? 'Someone is thinking of you ❤️' : 'is thinking of you ❤️' },
+      { urgency: 'high', ttl: 60 * 60, skipEndpoints },
     );
   } catch {
     logger.warn('Nudge notification failed');

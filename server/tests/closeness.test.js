@@ -44,6 +44,24 @@ describe('"Thinking of you" tap', () => {
     expect(pushes[0]).toMatchObject({ type: 'nudge', title: alex.user.name, body: 'is thinking of you ❤️' });
     expect((await alex.post('/api/nudge')).body.error.code).toBe('TOO_FAST');
   });
+
+  it('shows every heart as its own notification, never merged', async () => {
+    const pushes = [];
+    setPushSender(async (sub, body, options) => {
+      pushes.push({ ...JSON.parse(body), topic: options.topic });
+      return { statusCode: 201 };
+    });
+    await PushSubscription.deleteMany({});
+    await PushSubscription.create({ userId: sam.user.id, endpoint: 'https://fcm.googleapis.com/fcm/send/sam-phone', keys });
+    for (let i = 0; i < 3; i += 1) {
+      expect((await alex.post('/api/nudge')).status).toBe(204);
+      await delay(100);
+      resetNudges(); // stands in for the 5 s gap
+    }
+    expect(pushes).toHaveLength(3);
+    expect(new Set(pushes.map((p) => p.tag)).size).toBe(3);
+    expect(pushes.every((p) => p.topic === undefined)).toBe(true);
+  });
 });
 
 describe('days together & countdowns', () => {
