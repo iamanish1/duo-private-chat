@@ -15,6 +15,7 @@ import { NotificationPrompt } from '../components/notifications/NotificationProm
 import { DuoCodeReminder } from '../components/settings/DuoCodeReminder';
 import { ExpiringMediaReminder } from '../components/media/ExpiringMediaReminder';
 import { TodayBanner } from '../components/close/TodayBanner';
+import { PinnedBar } from '../components/chat/PinnedMessages';
 import { StateScreen } from '../components/common/StateScreen';
 import { useChatStore } from '../store/chatStore';
 import { isInCall, useCallStore } from '../store/callStore';
@@ -70,6 +71,7 @@ export default function Chat() {
       <section className="flex min-w-0 flex-1 flex-col">
         <ChatHeader onCall={onCall} onMenu={() => setMenuOpen(true)} onProfile={() => setMenuOpen(true)} onWatch={() => navigate('/watch')} callDisabled={callDisabled} />
         <ConnectionBanner />
+        {status === 'ready' && <PinnedBar onJump={jumpTo} />}
         <NowPlayingBar />
         {status === 'ready' && <DuoCodeReminder />}
         {status === 'ready' && <ExpiringMediaReminder />}

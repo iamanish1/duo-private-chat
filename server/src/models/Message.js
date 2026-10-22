@@ -73,6 +73,18 @@ const messageSchema = new mongoose.Schema(
     replyTo: { type: mongoose.Schema.Types.ObjectId, ref: 'Message', default: null },
     statusReply: { type: statusReplySchema, default: undefined },
     reactions: { type: [reactionSchema], default: [] },
+    // Pinned to the top of the chat (any number of messages), with an optional title.
+    pin: {
+      type: new mongoose.Schema(
+        {
+          by: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+          at: { type: Date, required: true },
+          title: { type: String, trim: true, maxlength: 60, default: '' },
+        },
+        { _id: false },
+      ),
+      default: undefined,
+    },
     status: { type: String, enum: MESSAGE_STATUSES, default: 'sent' },
     deliveredAt: { type: Date, default: null },
     readAt: { type: Date, default: null },
@@ -91,6 +103,7 @@ const messageSchema = new mongoose.Schema(
 messageSchema.index({ conversationId: 1, _id: -1 });
 messageSchema.index({ conversationId: 1, type: 1, _id: -1 });
 messageSchema.index({ receiverId: 1, status: 1 });
+messageSchema.index({ conversationId: 1, 'pin.at': -1 }, { partialFilterExpression: { 'pin.at': { $exists: true } } });
 messageSchema.index(
   { senderId: 1, clientId: 1 },
   { unique: true, partialFilterExpression: { clientId: { $type: 'string' } } },

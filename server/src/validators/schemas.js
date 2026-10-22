@@ -64,6 +64,8 @@ export const reactionBody = z.object({ emoji: emoji.nullable() });
 
 export const keepBody = z.object({ keep: z.boolean() });
 
+export const pinBody = z.object({ title: z.string().trim().max(60, 'A pin title can be up to 60 characters').default('') });
+
 const calendarDay = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Pick a date')

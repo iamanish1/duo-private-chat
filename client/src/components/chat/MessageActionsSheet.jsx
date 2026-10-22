@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Bookmark, BookmarkX, Copy, Pencil, Plus, Reply, RotateCcw, Trash2 } from 'lucide-react';
+import { Bookmark, BookmarkX, Copy, Pencil, Pin, PinOff, Plus, Reply, RotateCcw, Trash2 } from 'lucide-react';
+import { PinTitleSheet } from './PinnedMessages';
+import { unpinMessage } from '../../services/pinActions';
 import { BottomSheet, SheetAction } from '../common/BottomSheet';
 import { EmojiPicker } from './EmojiPicker';
 import { QUICK_REACTIONS, canEditMessage } from '../../config';
@@ -16,8 +18,10 @@ export function MessageActionsSheet({ message, onClose }) {
   const setEditing = useChatStore((s) => s.setEditing);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [moreEmoji, setMoreEmoji] = useState(false);
+  const [pinning, setPinning] = useState(false);
 
   if (!message) return null;
+  if (pinning) return <PinTitleSheet message={message} onClose={onClose} />;
   const mine = message.senderId === me?.id;
   const confirmed = Boolean(message.id) && message.status !== 'failed' && message.status !== 'sending';
   const myReaction = message.reactions?.find((r) => r.userId === me?.id)?.emoji;
@@ -96,6 +100,13 @@ export function MessageActionsSheet({ message, onClose }) {
               description={message.kept ? 'It will be removed 2 years after it was sent' : `Otherwise removed on ${formatDate(message.mediaRemovesAt)}`}
               onClick={run(() => keepMessage(message, !message.kept))}
             />
+          )}
+          {confirmed && !message.deleted && !message.pin && <SheetAction icon={Pin} label="Pin" description="Keep it at the top of the chat for both of you" onClick={() => setPinning(true)} />}
+          {confirmed && !message.deleted && message.pin && (
+            <>
+              <SheetAction icon={Pencil} label="Edit pin title" description={message.pin.title || 'No title yet'} onClick={() => setPinning(true)} />
+              <SheetAction icon={PinOff} label="Unpin" onClick={run(() => unpinMessage(message))} />
+            </>
           )}
           {message.text && !message.deleted && <SheetAction icon={Copy} label="Copy text" onClick={run(copy)} />}
           {mine && confirmed && !message.deleted && <SheetAction icon={Trash2} label="Delete for both" tone="danger" onClick={() => setConfirmDelete(true)} />}

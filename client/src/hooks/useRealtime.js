@@ -6,6 +6,7 @@ import { refreshWatch, watchSocketHandlers } from '../services/watchActions';
 import { musicSocketHandlers, refreshListening } from '../services/musicActions';
 import { loadStickers, stickerSocketHandlers } from '../services/stickerActions';
 import { closeSocketHandlers, loadLists, loadTogether } from '../services/closeActions';
+import { loadPins, syncPin } from '../services/pinActions';
 import { ensurePushSubscription, getPushEndpoint, onPushEndpointChange, showLocalNotification } from '../services/push';
 import { useChatStore } from '../store/chatStore';
 import { toast } from '../store/toastStore';
@@ -89,6 +90,7 @@ export function useRealtime({ onSessionEnded }) {
         refreshWatch();
         refreshListening();
         loadStickers();
+        loadPins();
         loadTogether();
         loadLists();
       },
@@ -111,7 +113,10 @@ export function useRealtime({ onSessionEnded }) {
         notifyIfHidden(message);
       },
       'message:status': (payload) => store().applyStatus(payload),
-      'message:updated': (message) => store().upsert(message),
+      'message:updated': (message) => {
+        store().upsert(message);
+        syncPin(message);
+      },
       'typing:start': () => {
         store().setPeerTyping(true);
         clearTimeout(typingTimer);

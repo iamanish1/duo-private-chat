@@ -45,6 +45,23 @@ export async function keep(req, res) {
   res.json({ message: serializeMessage(message) });
 }
 
+export async function pinned(req, res) {
+  const list = await messages.listPinned(conversationOf(req));
+  res.json({ messages: list.map(serializeMessage) });
+}
+
+export async function pin(req, res) {
+  const message = await messages.setPin(req.session, req.valid.params.id, req.valid.body.title);
+  publishUpdated(req.session, message);
+  res.json({ message: serializeMessage(message) });
+}
+
+export async function unpin(req, res) {
+  const message = await messages.removePin(req.session, req.valid.params.id);
+  publishUpdated(req.session, message);
+  res.json({ message: serializeMessage(message) });
+}
+
 export async function expiring(req, res) {
   const list = await messages.listExpiring(conversationOf(req));
   res.json({ messages: list.map(serializeMessage) });

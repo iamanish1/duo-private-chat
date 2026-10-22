@@ -157,6 +157,7 @@ export async function deleteMessage(session, messageId) {
   message.media = undefined;
   message.sticker = undefined;
   message.reactions = [];
+  message.pin = undefined;
   await message.save();
   removeMedia(media);
   return withReply(Message.findById(message._id)).lean();
@@ -199,6 +200,36 @@ export async function setReaction(session, messageId, emoji) {
   message.reactions = emoji ? [...others, { userId: session.user._id, emoji }] : others;
   await message.save();
   return withReply(Message.findById(message._id)).lean();
+}
+
+// ---- Pins ----------------------------------------------------------------------
+export const MAX_PINS = 100;
+
+/** Pins a message (or renames an existing pin) — either person, any number of messages. */
+export async function setPin(session, messageId, title = '') {
+  const message = await findInConversation(session.conversation._id, messageId);
+  if (message.deletedAt) throw badRequest('This message was deleted.', 'MESSAGE_DELETED');
+  if (message.pin?.at) {
+    message.pin.title = title;
+  } else {
+    const count = await Message.countDocuments({ conversationId: session.conversation._id, 'pin.at': { $exists: true } });
+    if (count >= MAX_PINS) throw badRequest(`You can pin up to ${MAX_PINS} messages. Unpin one first.`, 'TOO_MANY_PINS');
+    message.pin = { by: session.user._id, at: new Date(), title };
+  }
+  await message.save();
+  return withReply(Message.findById(message._id)).lean();
+}
+
+export async function removePin(session, messageId) {
+  const message = await findInConversation(session.conversation._id, messageId);
+  message.pin = undefined;
+  await message.save();
+  return withReply(Message.findById(message._id)).lean();
+}
+
+/** Newest pin first. */
+export async function listPinned(conversationId) {
+  return withReply(Message.find({ conversationId, 'pin.at': { $exists: true }, deletedAt: null }).sort({ 'pin.at': -1 }).limit(MAX_PINS)).lean();
 }
 
 export async function searchMessages(conversationId, { q, type, from, to, before, limit = 30 }) {

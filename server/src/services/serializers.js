@@ -123,6 +123,7 @@ export function serializeMessage(message) {
     readAt: message.readAt,
     editedAt: deleted ? null : message.editedAt ?? null,
     kept: Boolean(message.keptAt),
+    pin: !deleted && message.pin?.at ? { by: id(message.pin.by), at: message.pin.at, title: message.pin.title || '' } : null,
     mediaExpired: Boolean(message.mediaExpiredAt),
     // When the file will be removed (old-video clean-up), unless kept.
     mediaRemovesAt: mediaRemovalDate(message, deleted),

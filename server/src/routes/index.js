@@ -41,6 +41,9 @@ router.post('/messages', validate({ body: schemas.sendMessageBody }), messages.c
 router.get('/messages/search', validate({ query: schemas.searchQuery }), messages.search);
 router.get('/messages/media', validate({ query: schemas.mediaListQuery }), messages.media);
 router.get('/messages/expiring', messages.expiring);
+router.get('/messages/pinned', messages.pinned);
+router.put('/messages/:id/pin', validate({ params: schemas.idParams, body: schemas.pinBody }), messages.pin);
+router.delete('/messages/:id/pin', validate({ params: schemas.idParams }), messages.unpin);
 router.put('/messages/:id/keep', validate({ params: schemas.idParams, body: schemas.keepBody }), messages.keep);
 router.patch('/messages/:id/read', validate({ params: schemas.idParams }), messages.markRead);
 router.put('/messages/:id/reaction', validate({ params: schemas.idParams, body: schemas.reactionBody }), messages.react);

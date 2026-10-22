@@ -1,5 +1,5 @@
 import { memo, useState } from 'react';
-import { Ban, Bookmark, Clock, Reply } from 'lucide-react';
+import { Ban, Bookmark, Clock, Pin, Reply } from 'lucide-react';
 import { MessageStatus } from './MessageStatus';
 import { MediaContent } from './MediaContent';
 import { VoiceNote } from './VoiceNote';
@@ -47,7 +47,12 @@ export const MessageBubble = memo(function MessageBubble({
   const [fresh] = useState(() => Date.now() - new Date(message.createdAt).getTime() < 10_000);
   const time = formatTime(message.createdAt);
   const isMedia = (message.type === 'image' || message.type === 'video') && !message.deleted && !message.mediaExpired;
-  const keptMark = message.kept && !message.deleted ? <Bookmark size={11} className="fill-current" aria-label="Kept forever" /> : null;
+  const keptMark = (
+    <>
+      {message.pin && !message.deleted && <Pin size={11} className="rotate-45 fill-current" aria-label="Pinned" />}
+      {message.kept && !message.deleted && <Bookmark size={11} className="fill-current" aria-label="Kept forever" />}
+    </>
+  );
   const bigEmoji = message.type === 'text' && !message.replyTo && !message.statusReply && isEmojiOnly(message.text);
   const statusIcon = mine && !message.deleted ? <MessageStatus status={message.status} onMedia={isMedia && !message.text} /> : null;
   const replyAuthor = message.replyTo ? (message.replyTo.senderId === me?.id ? 'You' : peer?.name) : null;
