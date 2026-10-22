@@ -11,9 +11,12 @@ const label = (m) => m.pin.title || describeMessage(m);
 /** A slim bar under the header: the newest pin, and how many there are. Tap → all pins. */
 export function PinnedBar({ onJump }) {
   const pinned = usePinStore((s) => s.pinned);
+  const me = useChatStore((s) => s.me);
+  const peer = useChatStore((s) => s.peer);
   const [open, setOpen] = useState(false);
   if (!pinned.length) return null;
   const latest = pinned[0];
+  const by = latest.pin.by === me?.id ? 'you' : peer?.name;
 
   return (
     <>
@@ -26,7 +29,9 @@ export function PinnedBar({ onJump }) {
         >
           <Pin size={16} className="shrink-0 rotate-45 text-accent" />
           <span className="min-w-0 flex-1">
-            <span className="block text-xs font-semibold text-accent-strong">{pinned.length === 1 ? 'Pinned message' : `${pinned.length} pinned messages`}</span>
+            <span className="block truncate text-xs font-semibold text-accent-strong">
+              {pinned.length === 1 ? 'Pinned' : `${pinned.length} pinned`} · newest by {by}
+            </span>
             <span className="block truncate text-sm">{label(latest)}</span>
           </span>
           <ChevronRight size={18} className="shrink-0 text-muted" />

@@ -58,7 +58,8 @@ export async function pin(req, res) {
 
 export async function unpin(req, res) {
   const message = await messages.removePin(req.session, req.valid.params.id);
-  publishUpdated(req.session, message);
+  // Lets the other person see who unpinned it.
+  publishUpdated(req.session, message, { unpinnedBy: String(req.session.user._id) });
   res.json({ message: serializeMessage(message) });
 }
 

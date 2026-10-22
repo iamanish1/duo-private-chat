@@ -34,6 +34,6 @@ export function publishStatus(session, { ids, at }, status) {
   emitToConversation(session.conversation._id, 'message:status', { ids, status, at });
 }
 
-export function publishUpdated(session, message) {
-  emitToConversation(session.conversation._id, 'message:updated', serializeMessage(message));
+export function publishUpdated(session, message, extra = {}) {
+  emitToConversation(session.conversation._id, 'message:updated', { ...serializeMessage(message), ...extra });
 }

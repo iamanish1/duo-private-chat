@@ -50,6 +50,9 @@ describe('pinned messages', () => {
     const update = waitFor(samSocket, 'message:updated');
     await alex.put(`/api/messages/${m.id}/pin`).send({ title: 'Live' });
     expect((await update).pin).toMatchObject({ title: 'Live', by: alex.user.id });
+    const removed = waitFor(samSocket, 'message:updated');
+    await alex.delete(`/api/messages/${m.id}/pin`);
+    expect(await removed).toMatchObject({ pin: null, unpinnedBy: alex.user.id });
     samSocket.close();
   });
 

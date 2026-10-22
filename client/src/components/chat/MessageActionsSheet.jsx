@@ -14,6 +14,7 @@ const stamp = (value) => `${formatDayLabel(value)}, ${formatTime(value)}`;
 
 export function MessageActionsSheet({ message, onClose }) {
   const me = useChatStore((s) => s.me);
+  const peer = useChatStore((s) => s.peer);
   const setReplyTo = useChatStore((s) => s.setReplyTo);
   const setEditing = useChatStore((s) => s.setEditing);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -105,7 +106,7 @@ export function MessageActionsSheet({ message, onClose }) {
           {confirmed && !message.deleted && message.pin && (
             <>
               <SheetAction icon={Pencil} label="Edit pin title" description={message.pin.title || 'No title yet'} onClick={() => setPinning(true)} />
-              <SheetAction icon={PinOff} label="Unpin" onClick={run(() => unpinMessage(message))} />
+              <SheetAction icon={PinOff} label="Unpin" description={`Pinned by ${message.pin.by === me?.id ? 'you' : peer?.name ?? 'your partner'}`} onClick={run(() => unpinMessage(message))} />
             </>
           )}
           {message.text && !message.deleted && <SheetAction icon={Copy} label="Copy text" onClick={run(copy)} />}

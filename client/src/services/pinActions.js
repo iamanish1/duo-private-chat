@@ -27,8 +27,12 @@ export function syncPin(message) {
   if (message.pin && !message.deleted) setPinned(newestFirst([...others, message]));
   else if (before) setPinned(others);
 
+  // Like the chat background: tell this person when the other one changes the pins.
   const { me, peer } = useChatStore.getState();
-  if (message.pin && !before && message.pin.by !== me?.id) toast.show(`📌 ${peer?.name ?? 'Your partner'} pinned a message`);
+  const name = peer?.name ?? 'Your partner';
+  const what = (m) => (m.pin?.title ? `“${m.pin.title}”` : 'a message');
+  if (message.pin && !before && message.pin.by !== me?.id) toast.show(`📌 ${name} pinned ${what(message)}`);
+  else if (!message.pin && before && message.unpinnedBy && message.unpinnedBy !== me?.id) toast.show(`${name} unpinned ${what(before)}`);
 }
 
 export async function pinMessage(message, title = '') {
